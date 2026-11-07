@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Flappy Bird - Arcade Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+        <header class="game-header">
+            <h1 class="game-title">FLAPPY BIRD</h1>
+            <p class="game-subtitle">Modern Arcade Edition</p>
+        </header>
+
+        <main class="game-main">
+            <div class="canvas-wrapper">
+                <canvas id="gameCanvas" width="400" height="600" aria-label="Flappy Bird Game Canvas"></canvas>
+                
+                <!-- Score Display -->
+                <div class="score-hud" id="scoreHud">
+                    <div class="score-value" id="currentScore">0</div>
+                </div>
+                
+                <!-- Start Screen Overlay -->
+                <div class="overlay start-overlay" id="startOverlay">
+                    <div class="overlay-card start-card">
+                        <h2 class="overlay-title">FLAPPY BIRD</h2>
+                        <p class="overlay-subtitle">Choose Your Bird & Fly</p>
+                        
+                        <div class="character-selection">
+                            <h3 class="selection-title">Select Character</h3>
+                            <div class="character-grid">
+                                <button class="character-option active" data-character="flame" id="charFlame" aria-label="Crimson Flame Bird">
+                                    <div class="character-preview flame-preview">
+                                        <div class="bird-sprite flame-sprite"></div>
+                                    </div>
+                                    <div class="character-name">Crimson Flame</div>
+                                </button>
+                                <button class="character-option" data-character="cyber" id="charCyber" aria-label="Cyber Neon Bluejay">
+                                    <div class="character-preview cyber-preview">
+                                        <div class="bird-sprite cyber-sprite"></div>
+                                    </div>
+                                    <div class="character-name">Cyber Neon</div>
+                                </button>
+                                <button class="character-option" data-character="penguin" id="charPenguin" aria-label="Arctic Penguin">
+                                    <div class="character-preview penguin-preview">
+                                        <div class="bird-sprite penguin-sprite"></div>
+                                    </div>
+                                    <div class="character-name">Arctic Penguin</div>
+                                </button>
+                                <button class="character-option" data-character="emoji" id="charEmoji" aria-label="Emoji Sprite Bird">
+                                    <div class="character-preview emoji-preview">
+                                        <div class="bird-sprite emoji-sprite">🐦</div>
+                                    </div>
+                                    <div class="character-name">Emoji Bird</div>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="instructions">
+                            <div class="instruction-item">
+                                <span class="instruction-icon">🖱️</span>
+                                <span>Click or Tap to Flap</span>
+                            </div>
+                            <div class="instruction-item">
+                                <span class="instruction-icon">⌨️</span>
+                                <span>Spacebar or Arrow Up</span>
+                            </div>
+                            <div class="instruction-item">
+                                <span class="instruction-icon">🎯</span>
+                                <span>Avoid Pipes & Ground</span>
+                            </div>
+                        </div>
+                        <button class="start-btn" id="startBtn">START GAME</button>
+                    </div>
+                </div>
+                
+                <!-- Game Over Screen Overlay -->
+                <div class="overlay gameover-overlay" id="gameOverOverlay">
+                    <div class="overlay-card">
+                        <h2 class="overlay-title gameover-title">GAME OVER</h2>
+                        <div class="score-summary">
+                            <div class="score-row">
+                                <span class="score-label">Score</span>
+                                <span class="score-number" id="finalScore">0</span>
+                            </div>
+                            <div class="score-row">
+                                <span class="score-label">Best</span>
+                                <span class="score-number best-score" id="bestScore">0</span>
+                            </div>
+                        </div>
+                        <button class="restart-btn" id="restartBtn">PLAY AGAIN</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="game-footer">
+            <p class="footer-text">Built with HTML5 Canvas, CSS3 & Vanilla JavaScript</p>
+        </footer>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A modern, multi-difficulty Minesweeper game built with pure HTML, CSS, and Vanilla JavaScript.">
+    <title>Minesweeper — Modern Arcade Edition</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <main class="app">
+        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+        <header class="hero">
+            <p class="eyebrow">Project 07 · AI Engineering Journey</p>
+            <h1 class="game-title">MINESWEEPER</h1>
+            <p class="game-subtitle">Sweep smart. Flag fast. Beat your best.</p>
+        </header>
+
+        <section class="control-panel" aria-labelledby="difficultyHeading">
+            <div class="panel-heading">
+                <div class="panel-heading-copy">
+                    <p class="panel-kicker">Game setup</p>
+                    <h2 id="difficultyHeading">Difficulty</h2>
+                </div>
+                <button id="flagModeBtn" class="flag-toggle" type="button" aria-pressed="false">
+                    <span class="flag-toggle-icon" aria-hidden="true">🚩</span>
+                    <span>Flag mode</span>
+                    <span id="flagModeState" class="toggle-state">Off</span>
+                </button>
+            </div>
+
+            <div class="difficulty-switcher" role="group" aria-label="Choose a difficulty">
+                <button type="button" class="difficulty-btn is-active" data-difficulty="beginner" aria-pressed="true">
+                    <span class="difficulty-dot" aria-hidden="true"></span>
+                    <span class="difficulty-copy">
+                        <span class="difficulty-name">Beginner</span>
+                        <span class="difficulty-meta">9 × 9 · 10 mines</span>
+                    </span>
+                    <span class="difficulty-best">Best <b data-best="beginner">--</b></span>
+                </button>
+
+                <button type="button" class="difficulty-btn" data-difficulty="intermediate" aria-pressed="false">
+                    <span class="difficulty-dot" aria-hidden="true"></span>
+                    <span class="difficulty-copy">
+                        <span class="difficulty-name">Intermediate</span>
+                        <span class="difficulty-meta">16 × 16 · 40 mines</span>
+                    </span>
+                    <span class="difficulty-best">Best <b data-best="intermediate">--</b></span>
+                </button>
+
+                <button type="button" class="difficulty-btn" data-difficulty="expert" aria-pressed="false">
+                    <span class="difficulty-dot" aria-hidden="true"></span>
+                    <span class="difficulty-copy">
+                        <span class="difficulty-name">Expert</span>
+                        <span class="difficulty-meta">30 × 16 · 99 mines</span>
+                    </span>
+                    <span class="difficulty-best">Best <b data-best="expert">--</b></span>
+                </button>
+            </div>
+        </section>
+
+        <section class="game-panel" aria-labelledby="boardHeading">
+            <h2 id="boardHeading" class="sr-only">Minesweeper board</h2>
+
+            <div class="hud">
+                <div class="hud-card">
+                    <span class="hud-label">Mines</span>
+                    <span id="mineCounter" class="hud-value" aria-label="10 mines remaining">010</span>
+                </div>
+
+                <button id="faceButton" class="face-button" type="button" aria-label="Start a new game">😃</button>
+
+                <div class="hud-card hud-card--right">
+                    <span class="hud-label">Time</span>
+                    <span id="timer" class="hud-value" aria-label="Elapsed time in seconds">000</span>
+                </div>
+            </div>
+
+            <div class="hud-meta">
+                <span class="best-time">🏆 Best <strong id="bestTime">--</strong></span>
+                <span id="difficultyReadout" class="difficulty-readout">Beginner · 9 × 9</span>
+                <button id="resetRecordsBtn" class="text-button" type="button">Reset records</button>
+            </div>
+
+            <div class="board-shell">
+                <div class="board-scroller" id="boardScroller">
+                    <div id="board" class="board" role="group" aria-label="Minesweeper board"></div>
+                </div>
+            </div>
+
+            <p id="statusMessage" class="status-message" role="status" aria-live="polite">
+                Beginner · reveal a tile to start.
+            </p>
+
+            <div class="legend" aria-label="Controls">
+                <span><kbd>Left click</kbd> reveal</span>
+                <span><kbd>Right click</kbd> flag</span>
+                <span><kbd>Long press</kbd> flag on touch</span>
+                <span><kbd>F</kbd> flag focused tile</span>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

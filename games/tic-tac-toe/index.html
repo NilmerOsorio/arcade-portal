@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Tic Tac Toe - PvP & PvC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+        <header class="game-header">
+            <h1 class="game-title">TIC TAC TOE</h1>
+            <p class="game-subtitle">Modern Edition</p>
+        </header>
+
+        <section class="mode-section">
+            <h2 class="section-title">Game Mode</h2>
+            <div class="mode-switcher">
+                <button class="mode-btn active" data-mode="pvp" id="modePvp">
+                    <span class="mode-icon">👥</span>
+                    <span class="mode-text">Player vs. Player</span>
+                </button>
+                <button class="mode-btn" data-mode="pvc" id="modePvc">
+                    <span class="mode-icon">🤖</span>
+                    <span class="mode-text">Player vs. Computer (PC)</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="status-section">
+            <div class="status-banner" id="statusBanner">
+                <span id="statusText">Player X's Turn</span>
+            </div>
+        </section>
+
+        <section class="game-board-section">
+            <div class="game-board" id="gameBoard">
+                <button class="cell" data-cell-index="0" aria-label="Cell 0"></button>
+                <button class="cell" data-cell-index="1" aria-label="Cell 1"></button>
+                <button class="cell" data-cell-index="2" aria-label="Cell 2"></button>
+                <button class="cell" data-cell-index="3" aria-label="Cell 3"></button>
+                <button class="cell" data-cell-index="4" aria-label="Cell 4"></button>
+                <button class="cell" data-cell-index="5" aria-label="Cell 5"></button>
+                <button class="cell" data-cell-index="6" aria-label="Cell 6"></button>
+                <button class="cell" data-cell-index="7" aria-label="Cell 7"></button>
+                <button class="cell" data-cell-index="8" aria-label="Cell 8"></button>
+            </div>
+        </section>
+
+        <section class="scoreboard-section">
+            <h2 class="section-title">Scoreboard</h2>
+            <div class="scoreboard">
+                <div class="score-card score-x">
+                    <div class="score-label">Player X</div>
+                    <div class="score-value" id="scoreX">0</div>
+                    <div class="score-type">Wins</div>
+                </div>
+                <div class="score-card score-tie">
+                    <div class="score-label">Ties</div>
+                    <div class="score-value" id="scoreTie">0</div>
+                    <div class="score-type">Draws</div>
+                </div>
+                <div class="score-card score-o">
+                    <div class="score-label" id="scoreOLabel">Player O</div>
+                    <div class="score-value" id="scoreO">0</div>
+                    <div class="score-type">Wins</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="controls-section">
+            <button class="control-btn reset-round" id="resetRoundBtn">
+                <span>🔄</span>
+                <span>Reset Round</span>
+            </button>
+            <button class="control-btn reset-scores" id="resetScoresBtn">
+                <span>🗑️</span>
+                <span>Reset Scores</span>
+            </button>
+        </section>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

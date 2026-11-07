@@ -1,0 +1,47 @@
+/* Shared by every game so the return link looks and behaves the same. */
+.back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: fit-content;
+    max-width: 100%;
+    min-height: 44px;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid #9476c3;
+    border-radius: 0.55rem;
+    background: rgba(27, 23, 47, 0.94);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.18);
+    color: #efe6ff;
+    font: 600 14px/1.25 system-ui, sans-serif;
+    letter-spacing: 0.015em;
+    text-align: center;
+    text-decoration: none;
+    touch-action: manipulation;
+    transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .back-home-btn:hover {
+        border-color: #c6a5ff;
+        box-shadow: 0 0 16px rgba(139, 92, 246, 0.42);
+        transform: scale(1.025);
+    }
+}
+
+.back-home-btn:focus-visible {
+    outline: 3px solid #67d9ff;
+    outline-offset: 3px;
+}
+
+.back-home-btn:active {
+    border-color: #67d9ff;
+    background: #35274c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .back-home-btn, .back-home-btn:hover {
+        transition: none;
+        transform: none;
+    }
+}

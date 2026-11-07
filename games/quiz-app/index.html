@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive General Knowledge Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="background-gradient"></div>
+    
+    <header class="app-header">
+        <div class="header-content">
+            <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+            <h1 class="app-title">General Knowledge Quiz</h1>
+            <div class="audio-player">
+                <button id="audioToggleBtn" class="audio-btn" aria-label="Toggle background music">
+                    <span class="audio-icon">🎵</span>
+                    <span id="audioStatus">Play / Pause Music</span>
+                </button>
+                <audio id="backgroundMusic" loop>
+                    <source src="assets/bensound-hey.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+                <p class="audio-credit">Music: <a href="https://www.bensound.com/royalty-free-music/track/hey-happy-cheerful" target="_blank" rel="noopener noreferrer">Hey! (Happy Cheerful) by Bensound</a></p>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <!-- Quiz View -->
+        <section id="quizView" class="view">
+            <div class="quiz-card card">
+                <div class="quiz-header">
+                    <div class="progress-info">
+                        <span class="question-counter">
+                            Question <span id="currentQuestionNum">1</span> of <span id="totalQuestions">10</span>
+                        </span>
+                        <div class="progress-bar-container">
+                            <div id="progressBar" class="progress-bar"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="quiz-content">
+                    <h2 id="questionText" class="question-text"></h2>
+                    <div id="optionsContainer" class="options-container">
+                        <!-- Options will be dynamically inserted -->
+                    </div>
+                </div>
+                
+                <div class="quiz-footer">
+                    <button id="nextBtn" class="next-btn" disabled>Next Question</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Dashboard View -->
+        <section id="dashboardView" class="view" style="display: none;">
+            <div class="dashboard-card card">
+                <div class="dashboard-header">
+                    <h2 class="dashboard-title">Quiz Results</h2>
+                    <div class="accuracy-display">
+                        <div class="accuracy-circle">
+                            <span id="accuracyPercentage" class="accuracy-percentage">0%</span>
+                        </div>
+                        <p class="accuracy-label">Accuracy</p>
+                    </div>
+                </div>
+                
+                <div class="dashboard-stats">
+                    <div class="stat-card correct-stat">
+                        <div class="stat-icon">✓</div>
+                        <div class="stat-info">
+                            <span id="correctCount" class="stat-number">0</span>
+                            <span class="stat-label">Correct Answers</span>
+                        </div>
+                    </div>
+                    <div class="stat-card wrong-stat">
+                        <div class="stat-icon">✗</div>
+                        <div class="stat-info">
+                            <span id="wrongCount" class="stat-number">0</span>
+                            <span class="stat-label">Wrong Answers</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="breakdown-section">
+                    <h3 class="breakdown-title">Detailed Breakdown</h3>
+                    <div id="breakdownContainer" class="breakdown-container">
+                        <!-- Breakdown items will be dynamically inserted -->
+                    </div>
+                </div>
+                
+                <div class="dashboard-footer">
+                    <button id="restartBtn" class="restart-btn">Restart Quiz</button>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rock, Paper, Scissors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <header class="header">
+        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+        <h1 class="title">Rock · Paper · Scissors</h1>
+        <p class="subtitle">Player vs Computer</p>
+    </header>
+
+    <main class="main">
+        <section class="scoreboard" aria-label="Scoreboard">
+            <article class="score-card">
+                <h2 class="score-label">Player</h2>
+                <p class="score-value" id="player-score">0</p>
+            </article>
+            <article class="score-card">
+                <h2 class="score-label">Ties</h2>
+                <p class="score-value" id="tie-score">0</p>
+            </article>
+            <article class="score-card">
+                <h2 class="score-label">Computer</h2>
+                <p class="score-value" id="computer-score">0</p>
+            </article>
+        </section>
+
+        <section class="streak" aria-label="Winning streak">
+            <span class="streak-label">Winning Streak</span>
+            <span class="streak-value" id="streak">0</span>
+        </section>
+
+        <section class="game-arena" aria-live="polite" aria-label="Game arena">
+            <div class="result-display">
+                <p class="result-text" id="result-text">Choose your move to start!</p>
+            </div>
+            <div class="move-display">
+                <div class="move-card">
+                    <p class="move-label">You</p>
+                    <div class="move-emoji" id="player-move">❔</div>
+                </div>
+                <div class="vs">VS</div>
+                <div class="move-card">
+                    <p class="move-label">Computer</p>
+                    <div class="move-emoji" id="computer-move">❔</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="choices" aria-label="Choose your move">
+            <button class="choice-btn" data-choice="rock" aria-label="Rock">
+                <span class="choice-emoji">✊</span>
+                <span class="choice-label">Rock</span>
+            </button>
+            <button class="choice-btn" data-choice="paper" aria-label="Paper">
+                <span class="choice-emoji">✋</span>
+                <span class="choice-label">Paper</span>
+            </button>
+            <button class="choice-btn" data-choice="scissors" aria-label="Scissors">
+                <span class="choice-emoji">✌️</span>
+                <span class="choice-label">Scissors</span>
+            </button>
+        </section>
+
+        <div class="actions">
+            <button class="reset-btn" id="reset-btn">Reset Game</button>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>Built with Vanilla JS • Spec-Driven Development</p>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

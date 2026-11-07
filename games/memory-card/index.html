@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Memory Match — a sleek, dark-mode memory card game with three difficulty levels, 3D card flips, a move counter, a live timer, and personal bests saved locally.">
+    <meta name="theme-color" content="#080a11">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23080a11'/%3E%3Crect x='4' y='8' width='11' height='17' rx='3' fill='%231b2031' stroke='%237c9cff' stroke-width='1.5' transform='rotate(-9 9.5 16.5)'/%3E%3Crect x='17' y='8' width='11' height='17' rx='3' fill='%231b2031' stroke='%237ee7c7' stroke-width='1.5' transform='rotate(9 22.5 16.5)'/%3E%3C/svg%3E">
+    <title>Memory Match — 3D Card Matching Game</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+    <script src="js/main.js" defer></script>
+</head>
+<body>
+    <div class="app">
+        <header class="hero">
+            <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+            <p class="brand__eyebrow">Project 12 &middot; Memory Card Game</p>
+            <h1 class="brand__title">Memory <span class="brand__accent">Match</span></h1>
+            <p class="brand__tagline">Flip two cards, memorize the board, and clear every pair before the clock catches you.</p>
+        </header>
+
+        <main class="game" id="game" data-difficulty="easy">
+            <section class="hud" aria-label="Game statistics">
+                <div class="hud__stats">
+                    <div class="stat">
+                        <span class="stat__label">Moves</span>
+                        <strong class="stat__value" id="movesValue">0</strong>
+                    </div>
+                    <div class="stat">
+                        <span class="stat__label">Matches</span>
+                        <strong class="stat__value">
+                            <span id="matchesValue">0</span><span class="stat__total" id="pairsTotal">/ 6</span>
+                        </strong>
+                    </div>
+                    <div class="stat">
+                        <span class="stat__label">Time</span>
+                        <strong class="stat__value stat__value--time" id="timeValue">00:00</strong>
+                    </div>
+                </div>
+
+                <button class="btn btn--ghost hud__reset" id="resetButton" type="button" aria-keyshortcuts="R">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M20 11a8 8 0 1 0-2.34 5.66M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>Restart</span>
+                    <kbd class="hint-key" aria-hidden="true">R</kbd>
+                </button>
+            </section>
+
+            <div class="records" aria-label="Personal best for the current difficulty">
+                <p class="records__title">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"></path>
+                        <path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4M12 13v4m-3 4h6m-4-4h2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>Personal best &middot; <strong id="recordDifficulty">Easy</strong></span>
+                </p>
+                <dl class="records__list">
+                    <div class="record">
+                        <dt class="record__label">Fewest moves</dt>
+                        <dd class="record__value" id="bestMovesValue">&mdash;</dd>
+                    </div>
+                    <div class="record">
+                        <dt class="record__label">Fastest time</dt>
+                        <dd class="record__value" id="bestTimeValue">&mdash;</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <fieldset class="difficulty">
+                <legend class="difficulty__legend">Difficulty</legend>
+                <div class="difficulty__options">
+                    <button class="difficulty__option" type="button" data-difficulty="easy" aria-pressed="true">
+                        <span class="difficulty__dot" aria-hidden="true"></span>
+                        <span class="difficulty__text">
+                            <span class="difficulty__name">Easy</span>
+                            <span class="difficulty__meta">4 &times; 3 &middot; 6 pairs</span>
+                        </span>
+                    </button>
+                    <button class="difficulty__option" type="button" data-difficulty="medium" aria-pressed="false">
+                        <span class="difficulty__dot" aria-hidden="true"></span>
+                        <span class="difficulty__text">
+                            <span class="difficulty__name">Medium</span>
+                            <span class="difficulty__meta">4 &times; 4 &middot; 8 pairs</span>
+                        </span>
+                    </button>
+                    <button class="difficulty__option" type="button" data-difficulty="hard" aria-pressed="false">
+                        <span class="difficulty__dot" aria-hidden="true"></span>
+                        <span class="difficulty__text">
+                            <span class="difficulty__name">Hard</span>
+                            <span class="difficulty__meta">6 &times; 4 &middot; 12 pairs</span>
+                        </span>
+                    </button>
+                </div>
+            </fieldset>
+
+            <section class="board-panel" aria-label="Game board">
+                <div class="board-shell">
+                    <div class="board" id="board" role="group"
+                         aria-label="Memory board, Easy: 4 columns by 3 rows, 6 pairs"
+                         aria-describedby="boardHelp"></div>
+                </div>
+
+                <p class="game__status" id="statusMessage">Flip any card to start the clock.</p>
+                <p class="sr-only" id="boardHelp">Flip two cards per turn using Enter or Space. Matching pairs stay face up; mismatched cards flip back after eight tenths of a second. Find every pair to win.</p>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p><strong>How to play:</strong> flip two cards at a time. A matching pair stays face up and glows; a mismatch is shown for 0.8 seconds before flipping back. Clear every pair to finish the round.</p>
+            <p class="footer__meta">HTML5 &middot; CSS3 &middot; Vanilla JavaScript &middot; Personal bests saved locally</p>
+        </footer>
+    </div>
+
+    <div class="overlay" id="winOverlay" hidden>
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="winTitle" aria-describedby="winDescription">
+            <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+            <span class="modal__badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="M7 4h10v4a5 5 0 0 1-10 0V4Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+                    <path d="M7 6H4v1a4 4 0 0 0 4 4M17 6h3v1a4 4 0 0 1-4 4M12 13v4m-3 4h6m-4-4h2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </span>
+            <p class="modal__eyebrow" id="winEyebrow">Easy &middot; 4 &times; 3</p>
+            <h2 class="modal__title" id="winTitle">Board cleared!</h2>
+            <p class="modal__description" id="winDescription">Every pair found. Here is how your run stacked up against your personal best.</p>
+
+            <div class="modal__stats" aria-label="Final statistics">
+                <div class="modal__stat">
+                    <span>Moves</span>
+                    <strong id="winMoves">0</strong>
+                </div>
+                <div class="modal__stat">
+                    <span>Time</span>
+                    <strong id="winTime">00:00</strong>
+                </div>
+            </div>
+
+            <div class="modal__records">
+                <p class="modal__records-title">Personal best</p>
+                <div class="modal__record">
+                    <span class="modal__record-label">Fewest moves</span>
+                    <strong id="winBestMoves">&mdash;</strong>
+                    <span class="modal__new" id="newMovesBadge" hidden>New best</span>
+                </div>
+                <div class="modal__record">
+                    <span class="modal__record-label">Fastest time</span>
+                    <strong id="winBestTime">&mdash;</strong>
+                    <span class="modal__new" id="newTimeBadge" hidden>New best</span>
+                </div>
+            </div>
+
+            <p class="modal__note" id="winNote"></p>
+
+            <div class="modal__actions">
+                <button class="btn btn--primary" id="playAgainButton" type="button">Play again</button>
+                <button class="btn btn--ghost" id="changeDifficultyButton" type="button">Change difficulty</button>
+            </div>
+        </div>
+    </div>
+
+    <p class="sr-only" id="announcer" aria-live="polite" aria-atomic="true"></p>
+</body>
+</html>

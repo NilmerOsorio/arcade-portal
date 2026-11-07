@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Neon Snake — a retro arcade Snake game built with HTML5 Canvas, CSS3 and Vanilla JavaScript.">
+    <meta name="theme-color" content="#05070f">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2305070f'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='%234dff9e'/%3E%3Crect x='15' y='6' width='9' height='9' rx='2' fill='%2335e6ff'/%3E%3Crect x='15' y='15' width='9' height='9' rx='2' fill='%234dff9e'/%3E%3Crect x='24' y='15' width='6' height='6' rx='2' fill='%23ffc857'/%3E%3C/svg%3E">
+    <title>Neon Snake — Retro Arcade</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="app">
+        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span>
+                </span>
+                <div class="brand-text">
+                    <h1 class="brand-title">NEON SNAKE</h1>
+                    <p class="brand-sub">Retro Arcade &middot; Project 08</p>
+                </div>
+            </div>
+
+            <button class="sound-btn" id="soundToggle" type="button"
+                    aria-pressed="false" aria-label="Mute sound effects" title="Toggle sound effects">
+                <svg class="sound-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 9.4h3.1L12 5.4v13.2l-4.9-4H4z" fill="currentColor"></path>
+                    <path class="sound-wave" d="M15.4 8.7a4.7 4.7 0 0 1 0 6.6M18.1 6a8.2 8.2 0 0 1 0 12"
+                          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path class="sound-off" d="M15.8 9.4l5.1 5.2m0-5.2l-5.1 5.2"
+                          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                <span class="sound-label" id="soundLabel">SFX</span>
+            </button>
+        </header>
+
+        <main class="game">
+            <section class="hud" aria-label="Game statistics">
+                <div class="stat">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value" id="scoreValue">0</span>
+                </div>
+                <div class="stat stat--best">
+                    <span class="stat-label">Best</span>
+                    <span class="stat-value" id="bestValue">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Length</span>
+                    <span class="stat-value" id="lengthValue">4</span>
+                </div>
+            </section>
+
+            <div class="stage" id="stage">
+                <canvas id="gameCanvas" width="480" height="480" role="img"
+                        aria-label="Snake game board. Use arrow keys or W A S D to steer."></canvas>
+
+                <!-- Start screen -->
+                <div class="overlay overlay--start is-active" id="startOverlay">
+                    <div class="overlay-card">
+                        <p class="eyebrow">Insert coin</p>
+                        <h2 class="overlay-title neon-green">SNAKE</h2>
+                        <p class="overlay-text">Devour the neon fruit, grow your tail, and survive the grid.</p>
+
+                        <ul class="keys">
+                            <li>
+                                <span class="key-group">
+                                    <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>
+                                </span>
+                                <span class="key-desc">or arrow keys to steer</span>
+                            </li>
+                            <li>
+                                <span class="key-group"><kbd>Space</kbd></span>
+                                <span class="key-desc">to start / restart</span>
+                            </li>
+                            <li>
+                                <span class="key-group"><kbd>P</kbd></span>
+                                <span class="key-desc">to pause the run</span>
+                            </li>
+                        </ul>
+
+                        <p class="touch-hint">Swipe on the board to steer</p>
+
+                        <button class="btn btn--primary" id="startBtn" type="button">Start Game</button>
+                        <p class="overlay-note">Best score <strong id="startBest">0</strong></p>
+                    </div>
+                </div>
+
+                <!-- Pause screen -->
+                <div class="overlay overlay--pause" id="pauseOverlay" aria-hidden="true">
+                    <div class="overlay-card">
+                        <p class="eyebrow">System halted</p>
+                        <h2 class="overlay-title neon-cyan">PAUSED</h2>
+                        <p class="overlay-text">Catch your breath. The grid will wait.</p>
+                        <button class="btn btn--primary" id="resumeBtn" type="button">Resume</button>
+                        <p class="overlay-note">Press <kbd>P</kbd> or <kbd>Space</kbd> to continue</p>
+                    </div>
+                </div>
+
+                <!-- Game over screen -->
+                <div class="overlay overlay--over" id="gameOverOverlay" aria-hidden="true">
+                    <div class="overlay-card">
+                        <p class="eyebrow eyebrow--danger">Signal lost</p>
+                        <h2 class="overlay-title neon-magenta">GAME OVER</h2>
+                        <p class="record-badge" id="newRecordBadge" hidden>&#9733; New high score &#9733;</p>
+
+                        <dl class="summary">
+                            <div class="summary-item">
+                                <dt>Score</dt>
+                                <dd id="finalScore">0</dd>
+                            </div>
+                            <div class="summary-item">
+                                <dt>Best</dt>
+                                <dd id="finalBest">0</dd>
+                            </div>
+                            <div class="summary-item">
+                                <dt>Length</dt>
+                                <dd id="finalLength">4</dd>
+                            </div>
+                        </dl>
+
+                        <button class="btn btn--primary" id="restartBtn" type="button">Play Again</button>
+                        <p class="overlay-note">Press <kbd>Space</kbd> to retry</p>
+                    </div>
+                </div>
+            </div>
+
+            <p class="stage-hint">
+                <span>Arrows / WASD to move</span>
+                <span class="dot" aria-hidden="true">&middot;</span>
+                <span>Space to start</span>
+                <span class="dot" aria-hidden="true">&middot;</span>
+                <span>P to pause</span>
+                <span class="dot" aria-hidden="true">&middot;</span>
+                <span>Swipe on touch</span>
+            </p>
+        </main>
+
+        <footer class="footer">
+            <p>Built with HTML5 Canvas, CSS3 &amp; Vanilla JavaScript</p>
+            <p class="footer-muted">Custom scoring &amp; game-over audio FX</p>
+        </footer>
+    </div>
+
+    <p class="sr-only" id="liveStatus" role="status" aria-live="polite"></p>
+    <script src="js/main.js"></script>
+</body>
+</html>

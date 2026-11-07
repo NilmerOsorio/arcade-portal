@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Simon Says — a neon memory arcade game built with HTML, CSS and Vanilla JavaScript.">
+    <meta name="theme-color" content="#05070f">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2305070f'/%3E%3Crect x='6' y='6' width='9' height='9' rx='2' fill='%2340ff9e'/%3E%3Crect x='17' y='6' width='9' height='9' rx='2' fill='%23ff3d6e'/%3E%3Crect x='6' y='17' width='9' height='9' rx='2' fill='%23ffd83d'/%3E%3Crect x='17' y='17' width='9' height='9' rx='2' fill='%234a7cff'/%3E%3C/svg%3E">
+    <title>Simon Says — Neon Memory Arcade</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="app">
+        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <span class="brand-dot brand-dot--green"></span>
+                    <span class="brand-dot brand-dot--red"></span>
+                    <span class="brand-dot brand-dot--yellow"></span>
+                    <span class="brand-dot brand-dot--blue"></span>
+                </span>
+                <div class="brand-text">
+                    <h1 class="brand-title">SIMON SAYS</h1>
+                    <p class="brand-sub">Neon Memory Arcade &middot; Project 09</p>
+                </div>
+            </div>
+
+            <button class="sound-btn" id="soundToggle" type="button"
+                    aria-pressed="false" aria-label="Mute sound effects" title="Toggle sound effects">
+                <svg class="sound-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M4 9.4h3.1L12 5.4v13.2l-4.9-4H4z" fill="currentColor"></path>
+                    <path class="sound-wave" d="M15.4 8.7a4.7 4.7 0 0 1 0 6.6M18.1 6a8.2 8.2 0 0 1 0 12"
+                          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                    <path class="sound-off" d="M15.8 9.4l5.1 5.2m0-5.2l-5.1 5.2"
+                          fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+                </svg>
+                <span class="sound-label" id="soundLabel">SFX</span>
+            </button>
+        </header>
+
+        <main class="cabinet">
+            <section class="hud" aria-label="Game statistics">
+                <div class="stat">
+                    <span class="stat-label">Score</span>
+                    <span class="stat-value" id="scoreValue">0</span>
+                </div>
+                <div class="stat stat--best">
+                    <span class="stat-label">Best</span>
+                    <span class="stat-value" id="bestValue">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Round</span>
+                    <span class="stat-value" id="roundValue">&mdash;</span>
+                </div>
+            </section>
+
+            <section class="stage" aria-label="Simon Says play area">
+                <div class="board-shell">
+                    <div class="board" id="board" data-state="idle" role="group"
+                         aria-label="Four colored pads. Green, red, yellow and blue.">
+                        <button class="pad pad--green" type="button" data-color="green"
+                                aria-label="Green pad" aria-keyshortcuts="G 1">
+                            <span class="pad-glyph" aria-hidden="true">&#9650;</span>
+                            <span class="pad-name">Green</span>
+                        </button>
+                        <button class="pad pad--red" type="button" data-color="red"
+                                aria-label="Red pad" aria-keyshortcuts="R 2">
+                            <span class="pad-glyph" aria-hidden="true">&#9670;</span>
+                            <span class="pad-name">Red</span>
+                        </button>
+                        <button class="pad pad--yellow" type="button" data-color="yellow"
+                                aria-label="Yellow pad" aria-keyshortcuts="Y 3">
+                            <span class="pad-glyph" aria-hidden="true">&#9632;</span>
+                            <span class="pad-name">Yellow</span>
+                        </button>
+                        <button class="pad pad--blue" type="button" data-color="blue"
+                                aria-label="Blue pad" aria-keyshortcuts="B 4">
+                            <span class="pad-glyph" aria-hidden="true">&#9679;</span>
+                            <span class="pad-name">Blue</span>
+                        </button>
+
+                        <!-- Playing overlay: non-blocking central status hub -->
+                        <div class="hub" id="playOverlay" data-phase="idle" aria-hidden="true">
+                            <span class="hub-brand">SIMON</span>
+                            <span class="hub-phase" id="phaseText">READY</span>
+                        </div>
+                    </div>
+
+                    <!-- Start overlay -->
+                    <div class="overlay overlay--start is-active" id="startOverlay">
+                        <div class="overlay-card">
+                            <p class="eyebrow">Insert coin</p>
+                            <h2 class="overlay-title">SIMON SAYS</h2>
+                            <p class="overlay-text">Watch the neon pattern, then repeat it in order. One wrong step ends the run.</p>
+
+                            <ul class="legend" aria-label="Keyboard shortcuts">
+                                <li><span class="legend-dot legend-dot--green"></span>G / 1</li>
+                                <li><span class="legend-dot legend-dot--red"></span>R / 2</li>
+                                <li><span class="legend-dot legend-dot--yellow"></span>Y / 3</li>
+                                <li><span class="legend-dot legend-dot--blue"></span>B / 4</li>
+                            </ul>
+
+                            <button class="btn btn--primary" id="startBtn" type="button">Start Game</button>
+                            <p class="overlay-note">Personal best <strong id="startBest">0</strong></p>
+                        </div>
+                    </div>
+
+                    <!-- Game over overlay -->
+                    <div class="overlay overlay--over" id="gameOverOverlay" aria-hidden="true">
+                        <div class="overlay-card">
+                            <p class="eyebrow eyebrow--danger">Signal lost</p>
+                            <h2 class="overlay-title overlay-title--danger">GAME OVER</h2>
+                            <p class="record-badge" id="newRecordBadge" hidden>&#9733; New personal best &#9733;</p>
+
+                            <dl class="summary">
+                                <div class="summary-item">
+                                    <dt>Score</dt>
+                                    <dd id="finalScore">0</dd>
+                                </div>
+                                <div class="summary-item">
+                                    <dt>Best</dt>
+                                    <dd id="finalBest">0</dd>
+                                </div>
+                                <div class="summary-item">
+                                    <dt>Round</dt>
+                                    <dd id="finalRound">1</dd>
+                                </div>
+                            </dl>
+
+                            <p class="overlay-text overlay-reason" id="gameOverReason">You pressed Blue where Red was next.</p>
+
+                            <button class="btn btn--primary" id="restartBtn" type="button">Play Again</button>
+                            <p class="overlay-note">Press <kbd>Space</kbd> to retry</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="statusbar">
+                    <p class="status-text" id="statusText">Press Start to power up the grid.</p>
+                    <span class="status-count" id="statusCount">&mdash;</span>
+                </div>
+
+                <ol class="progress" id="progressDots" aria-hidden="true"></ol>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>Watch &middot; Remember &middot; Repeat</p>
+            <p class="footer-muted">Pure HTML, CSS &amp; Vanilla JavaScript &middot; Web Audio API</p>
+        </footer>
+    </div>
+
+    <p class="sr-only" id="liveStatus" role="status" aria-live="polite"></p>
+    <script src="js/main.js"></script>
+</body>
+</html>

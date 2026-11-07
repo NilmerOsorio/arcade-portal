@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101222">
+  <meta name="description" content="Explore Arcade Portal, a collection of eleven playable browser games. Search by name or genre and jump into a game.">
+  <title>Arcade Portal · Game Library</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles/styels.css">
+  <script defer src="script/script.js"></script>
+</head>
+<body id="top">
+  <a class="skip-link" href="#library">Skip to game library</a>
+  <header class="site-header">
+    <div class="shell topbar">
+      <a class="brand" href="#top" aria-label="Arcade Portal home">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <span>Arcade<span class="brand-accent">Portal</span></span>
+      </a>
+      <nav class="navigation" aria-label="Main navigation">
+        <a class="library-link" href="#library"><span class="grid-icon" aria-hidden="true"></span>Game library</a>
+        <button class="random-btn" id="random-game" type="button">
+          <span class="dice-icon" aria-hidden="true"></span>Random game
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <header class="hero" aria-labelledby="hero-title">
+      <div class="hero-scene" aria-hidden="true"><canvas id="hero-art" width="320" height="156"></canvas></div>
+      <div class="hero-content">
+        <p class="hero-meta"><span aria-hidden="true"></span>Free to play <b aria-hidden="true">/</b> 11 games</p>
+        <h1 id="hero-title">Press Start<span>.</span></h1>
+        <p class="hero-description">From arcade classics to brain teasers, find your next favorite browser game.</p>
+        <div class="search-box" role="search" aria-label="Game library search">
+          <label class="sr-only" for="game-search">Search games by title, description, or category</label>
+          <span class="search-icon" aria-hidden="true"></span>
+          <input type="text" id="game-search" placeholder="Search games or genres…" autocomplete="off" spellcheck="false" aria-controls="game-grid">
+          <button id="clear-search" class="clear-search" type="button" aria-label="Clear search" hidden>×</button>
+          <kbd class="shortcut" aria-hidden="true">/</kbd>
+        </div>
+      </div>
+    </header>
+
+    <section id="library" class="library" aria-labelledby="library-title">
+      <div class="library-heading">
+        <h2 id="library-title"><span class="grid-icon" aria-hidden="true"></span>Game library</h2>
+        <span class="result-count" id="result-count" role="status" aria-atomic="true"></span>
+      </div>
+      <div id="category-filters" class="filters" role="group" aria-label="Filter by game category"></div>
+      <div id="game-grid" class="game-grid"></div>
+      <div id="empty-state" class="empty-state" hidden>
+        <span class="search-icon" aria-hidden="true"></span>
+        <h3>No games found matching your query</h3>
+        <p>Try a different keyword or browse the full library.</p>
+        <button type="button" id="reset-filters" class="reset-btn">Show all games</button>
+      </div>
+      <noscript><p>Enable JavaScript to browse and search the game library.</p></noscript>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="shell"><span>Arcade Portal</span><a href="#top">Back to top <span aria-hidden="true">↑</span></a></div></footer>
+</body>
+</html>
