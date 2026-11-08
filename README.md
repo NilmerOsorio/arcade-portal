@@ -1,18 +1,61 @@
-# 🕹️ Welcome to Arcade Portal
+# 🕹️ Welcome to the Master Arcade Hub
 
-I built Arcade Portal as a single place to play 11 browser games. Each game has its own page, so you can bookmark a favorite, challenge a friend to Pong, or head back to the library when you feel like trying something different.
+I built Arcade Portal as a searchable home for 11 browser games. You can look up an old favorite by name, browse by genre, or let **Random game** pick your next round. Each game has its own page, so you can bookmark it or share it with a friend.
 
-## 🎮 Play your first game
+## 🚀 Live Demos
 
-1. Download the project. If it comes as a ZIP, extract the whole folder so the games, artwork, and sounds stay together.
-2. Open the `index.html` file next to this README in your browser. That opens the game library. You can play without installing any tools.
-3. Choose a game title or select **Play Now**. When you’re ready for another round somewhere else, select **← Back to Arcade**.
+- ☁️ **Cloudflare Pages:** [https://arcade-portal.giovannyosorio586.workers.dev/](https://arcade-portal.giovannyosorio586.workers.dev/)
+- 🐙 **GitHub Pages:** [https://nilmerosorio.github.io/arcade-portal/](https://nilmerosorio.github.io/arcade-portal/)
 
-## Find something to play
+To play locally, download and extract the project, then open the root `index.html` in your browser.
 
-The library updates as you type. Search looks at game titles, descriptions, and category tags, so you don’t need to remember the exact name. Try **pipes** to find Flappy Bird, or select **Memory** to see Memory Card Match and Simon Says. You can combine a category with a search. If there are no matches, **Show all games** clears both filters.
+## ✨ Features
 
-If you’d like a surprise, **Random game** opens one of the 11 games in the full library. On a keyboard, press `/` from the library to jump to the search box.
+- 🔍 **Real-time search.** Search titles, descriptions, and tags as you type. Try **pipes** to find Flappy Bird, or combine a search with a category like **Puzzle**.
+- 🎮 **Game catalog.** Each card has pixel artwork, a short description, genre tags, and a **Play Now** link.
+- 📱 **Responsive layout.** The CSS grid fits the neon game cards into columns on desktop and a single column on narrow phones.
+- ↩️ **Back to the hub.** Select **← Back to Arcade** from any game to return to the library and choose another.
+
+## 👾 Included Games
+
+- **2048** — Slide matching tiles together to reach 2048.
+- **Dino Runner** — Jump over cacti and keep the run going.
+- **Flappy Bird** — Pick a bird and fly through gaps in the pipes.
+- **Memory Card** — Flip cards and remember where their partners are.
+- **Minesweeper** — Read the clues to uncover safe tiles and flag mines.
+- **Pong** — Rally against a friend or a computer opponent.
+- **Quiz App** — Answer trivia questions and review your score.
+- **Rock Paper Scissors (RPS)** — Choose your move and build a winning streak.
+- **Simon Says** — Repeat a growing sequence of lights and sounds.
+- **Snake** — Collect food and steer clear of collisions as your snake grows.
+- **Tic Tac Toe** — Get three in a row against a friend or the computer.
+
+## 🗂️ Project Structure
+
+```text
+Arcade-Portal/
+├── README.md
+├── index.html             # Hub and game library
+├── script/
+│   └── script.js          # Game catalog, card rendering, and search
+├── styles/
+│   └── styels.css         # Portal theme and responsive grid
+└── games/
+    ├── arcade-nav.css     # Shared return-link styling
+    ├── 2048/
+    ├── dino-runner/
+    ├── flappy-bird/
+    ├── memory-card/
+    ├── minesweeper/
+    ├── pong/
+    ├── quiz-app/
+    ├── rps-game/
+    ├── simon-says/
+    ├── snake/
+    └── tic-tac-toe/
+```
+
+Each game folder contains its own `index.html`, styles, and JavaScript. For example, `games/pong/` holds the court and match logic, while the root portal handles finding and launching Pong.
 
 ## 🛠️ How the project fits together
 
@@ -26,6 +69,4 @@ I used HTML, CSS, and JavaScript to build the portal. The library handles browsi
 | `games/` | One folder per game, each with its own page, styles, scripts, and any media it uses. |
 | `games/arcade-nav.css` | The shared style for the **Back to Arcade** link. |
 
-If you’re exploring the code, try following one game from its catalog entry to its folder. For example, the Pong entry in `script/script.js` opens `games/pong/index.html`, and `games/pong/js/main.js` handles the match itself.
-
-Pick a game that catches your eye and enjoy a round!
+Pick a game, play a round, and explore its folder if you’re curious how it works!
