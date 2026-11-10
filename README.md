@@ -4,7 +4,7 @@ I built Arcade Portal as a searchable home for 11 browser games. You can look up
 
 ## 🚀 Live Demos
 
-- ☁️ **Cloudflare Pages:** [https://arcade-portal.giovannyosorio586.workers.dev/](https://arcade-portal.pixelpulsearcade.workers.dev/)
+- ☁️ **Cloudflare Pages:** [[https://arcade-portal.giovannyosorio586.workers.dev/](https://arcade-portal.pixelpulsearcade.workers.dev/)](https://arcade-portal.pixelpulsearcade.workers.dev/)
 - 🐙 **GitHub Pages:** [https://nilmerosorio.github.io/arcade-portal/](https://nilmerosorio.github.io/arcade-portal/)
 
 To play locally, download and extract the project, then open the root `index.html` in your browser.
