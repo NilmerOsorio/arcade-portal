@@ -1,52 +1,30 @@
-// Flappy Bird Game - Modern Arcade Edition
-// Built with HTML5 Canvas, CSS3 & Vanilla JavaScript
-// Spec-Driven Development (SDD) with OpenCode AI Agent
+// Flappy Bird runs its original physics at 60 ticks per second.
+const tickDuration = 1000 / 60;
 
 class FlappyBirdGame {
     constructor() {
-        // Canvas setup
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        
-        // Game dimensions
+        this.ctx.imageSmoothingEnabled = false;
         this.width = this.canvas.width;
         this.height = this.canvas.height;
-        
-        // Game state
-        this.gameState = 'start'; // 'start', 'playing', 'gameover'
+        this.gameState = 'start';
         this.score = 0;
         this.highScore = this.loadHighScore();
-        this.selectedBird = 'flame'; // 'flame', 'cyber', 'penguin', 'emoji'
-        
-        // Bird properties
+        this.selectedBird = 'flame';
         this.bird = {
-            x: 80,
-            y: this.height / 2,
-            width: 34,
-            height: 24,
-            velocity: 0,
-            gravity: 0.5,
-            jumpPower: -8,
-            rotation: 0
+            x: 80, y: this.height / 2, width: 34, height: 24,
+            velocity: 0, gravity: 0.5, jumpPower: -8, rotation: 0
         };
-        
-        // Pipes
         this.pipes = [];
         this.pipeWidth = 60;
         this.pipeGap = 150;
-        this.pipeSpawnRate = 90; // frames
+        this.pipeSpawnRate = 90;
         this.pipeSpawnTimer = 0;
         this.pipeSpeed = 2.5;
-        
-        // Ground
-        this.ground = {
-            y: this.height - 80,
-            height: 80,
-            x: 0
-        };
-        
-        // UI elements
+        this.ground = { y: this.height - 80, height: 80, x: 0 };
         this.startOverlay = document.getElementById('startOverlay');
+        this.characterOverlay = document.getElementById('characterOverlay');
         this.gameOverOverlay = document.getElementById('gameOverOverlay');
         this.scoreHud = document.getElementById('scoreHud');
         this.currentScoreEl = document.getElementById('currentScore');
@@ -54,125 +32,120 @@ class FlappyBirdGame {
         this.bestScoreEl = document.getElementById('bestScore');
         this.startBtn = document.getElementById('startBtn');
         this.restartBtn = document.getElementById('restartBtn');
-        
-        // Game loop
-        this.animationId = null;
-        this.frameCount = 0;
-        
+        this.options = [...document.querySelectorAll('.character-option')];
         this.init();
     }
-    
+
     init() {
-        // Event listeners
         this.startBtn.addEventListener('click', () => this.startGame());
-        this.restartBtn.addEventListener('click', () => this.restartGame());
-        
-        // Character selection
-        const charOptions = document.querySelectorAll('.character-option');
-        charOptions.forEach(option => {
-            option.addEventListener('click', () => {
-                // Update active state
-                charOptions.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
-                
-                // Update selected bird
-                this.selectedBird = option.getAttribute('data-character');
+        this.restartBtn.addEventListener('click', () => this.startGame());
+        for (const id of ['chooseBirdBtn', 'changeBirdBtn']) {
+            document.getElementById(id).addEventListener('click', () => {
+                this.pipes = [];
+                this.bird.y = this.height / 2;
+                this.bird.rotation = 0;
+                this.gameState = 'select';
+                this.updateUI();
+                this.draw();
+                this.options.find(option => option.dataset.character === this.selectedBird).focus();
             });
-        });
-        
-        // Keyboard controls
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' || e.code === 'ArrowUp') {
-                e.preventDefault();
-                this.handleInput();
-            }
-        });
-        
-        // Mouse/touch controls on canvas
-        this.canvas.addEventListener('click', () => {
-            this.handleInput();
-        });
-        
-        // Touch support for mobile
-        this.canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.handleInput();
-        }, { passive: false });
-        
-        // Initialize UI
-        this.updateUI();
-        
-        // Start game loop for rendering (even in start state)
-        this.gameLoop();
-    }
-    
-    handleInput() {
-        if (this.gameState === 'start') {
-            this.startGame();
-        } else if (this.gameState === 'playing') {
-            this.flap();
         }
-        // In gameover state, restart is handled by button
+        document.getElementById('confirmBirdBtn').addEventListener('click', () => {
+            this.gameState = 'start';
+            this.updateUI();
+            this.startBtn.focus();
+        });
+        for (const option of this.options) {
+            this.drawPreview(option.querySelector('canvas'), option.dataset.character);
+            option.addEventListener('click', () => this.selectBird(option));
+        }
+        this.selectBird(this.options.find(option => option.dataset.character === this.selectedBird));
+
+        document.addEventListener('keydown', event => {
+            if (event.code !== 'Space' && event.code !== 'ArrowUp') return;
+            // Let Space activate focused menu controls using normal keyboard behavior.
+            if (this.gameState === 'select' ||
+                (event.code === 'Space' && this.gameState !== 'playing' &&
+                    event.target.closest?.('button, a'))) return;
+            event.preventDefault();
+            if (event.repeat) return;
+            if (this.gameState === 'playing') this.flap();
+            else if (this.gameState === 'start' || event.code === 'Space') this.startGame();
+        });
+        this.canvas.addEventListener('pointerdown', event => {
+            if (!event.isPrimary || event.button !== 0) return;
+            if (this.gameState === 'playing') this.flap();
+        });
+        this.updateUI();
     }
-    
+
+    drawPreview(canvas, skin) {
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        FlappyArt.drawBird(ctx, skin, 0, 0, canvas.width, canvas.height);
+    }
+
+    selectBird(option) {
+        this.selectedBird = option.dataset.character;
+        for (const choice of this.options) {
+            const selected = choice === option;
+            choice.classList.toggle('active', selected);
+            choice.setAttribute('aria-pressed', String(selected));
+        }
+        this.drawPreview(document.getElementById('selectedBirdPreview'), this.selectedBird);
+        document.getElementById('selectedBirdName').textContent = option.getAttribute('aria-label');
+        this.draw();
+    }
+
     startGame() {
+        if (this.gameState === 'playing') return;
         this.gameState = 'playing';
         this.score = 0;
         this.bird.y = this.height / 2;
-        this.bird.velocity = 0;
-        this.bird.rotation = 0;
+        this.ground.x = 0;
         this.pipes = [];
         this.pipeSpawnTimer = 0;
-        this.frameCount = 0;
-        
-        this.updateUI();
         this.flap();
+        this.updateUI();
+        this.canvas.focus({ preventScroll: true });
+        this.lastFrameTime = performance.now();
+        this.accumulator = 0;
+        this.draw();
+        requestAnimationFrame(time => this.gameLoop(time));
     }
-    
-    restartGame() {
-        this.startGame();
-    }
-    
+
     flap() {
         this.bird.velocity = this.bird.jumpPower;
-        this.bird.rotation = -25; // Tilt up on flap
+        this.bird.rotation = -25;
     }
-    
-    gameLoop() {
-        this.update();
-        this.draw();
-        this.animationId = requestAnimationFrame(() => this.gameLoop());
-    }
-    
-    update() {
-        this.frameCount++;
-        
-        if (this.gameState === 'playing') {
-            // Update bird physics
-            this.bird.velocity += this.bird.gravity;
-            this.bird.y += this.bird.velocity;
-            
-            // Update bird rotation based on velocity
-            if (this.bird.velocity < 0) {
-                this.bird.rotation = Math.max(-25, this.bird.rotation - 2);
-            } else {
-                this.bird.rotation = Math.min(90, this.bird.rotation + 3);
-            }
-            
-            // Update pipes
-            this.updatePipes();
-            
-            // Check collisions
-            this.checkCollisions();
-            
-            // Update score
-            this.updateScore();
+
+    gameLoop(time) {
+        // Bound catch-up after a background tab resumes.
+        this.accumulator += Math.min(100, Math.max(0, time - this.lastFrameTime));
+        this.lastFrameTime = time;
+        while (this.accumulator >= tickDuration && this.gameState === 'playing') {
+            this.update();
+            this.accumulator -= tickDuration;
         }
-        
-        // Update UI
-        this.updateUI();
+        this.draw();
+        if (this.gameState === 'playing') requestAnimationFrame(next => this.gameLoop(next));
     }
-    
+
+    update() {
+        this.bird.velocity += this.bird.gravity;
+        this.bird.y += this.bird.velocity;
+        if (this.bird.velocity < 0) {
+            this.bird.rotation = Math.max(-25, this.bird.rotation - 2);
+        } else {
+            this.bird.rotation = Math.min(90, this.bird.rotation + 3);
+        }
+        this.ground.x += this.pipeSpeed;
+        this.updatePipes();
+        this.checkCollisions();
+        if (this.gameState === 'playing') this.updateScore();
+    }
+
     updatePipes() {
         // Spawn new pipes
         if (this.pipeSpawnTimer >= this.pipeSpawnRate) {
@@ -259,6 +232,7 @@ class FlappyBirdGame {
                 if (this.bird.x > topPipe.x + topPipe.width) {
                     topPipe.scored = true;
                     this.score++;
+                    this.currentScoreEl.textContent = this.score;
                     // Mark bottom pipe as scored too
                     if (this.pipes[i + 1]) {
                         this.pipes[i + 1].scored = true;
@@ -267,373 +241,48 @@ class FlappyBirdGame {
             }
         }
     }
-    
+
     gameOver() {
         this.gameState = 'gameover';
-        
-        // Update high score
         if (this.score > this.highScore) {
             this.highScore = this.score;
-            this.saveHighScore();
+            try {
+                localStorage.setItem('flappyBirdHighScore', String(this.score));
+            } catch {
+                // The session best still works when browser storage is unavailable.
+            }
         }
-        
         this.updateUI();
+        this.restartBtn.focus({ preventScroll: true });
     }
-    
+
     loadHighScore() {
-        const saved = localStorage.getItem('flappyBirdHighScore');
-        return saved ? parseInt(saved) : 0;
+        try {
+            const saved = Number(localStorage.getItem('flappyBirdHighScore'));
+            return Number.isSafeInteger(saved) && saved >= 0 ? saved : 0;
+        } catch {
+            return 0;
+        }
     }
-    
-    saveHighScore() {
-        localStorage.setItem('flappyBirdHighScore', this.highScore.toString());
-    }
-    
+
     updateUI() {
-        // Update score display
+        this.startOverlay.classList.toggle('hidden', this.gameState !== 'start');
+        this.characterOverlay.classList.toggle('hidden', this.gameState !== 'select');
+        this.gameOverOverlay.classList.toggle('hidden', this.gameState !== 'gameover');
+        this.scoreHud.classList.toggle('hidden', this.gameState !== 'playing');
         this.currentScoreEl.textContent = this.score;
-        
-        // Show/hide overlays based on game state
-        if (this.gameState === 'start') {
-            this.startOverlay.classList.remove('hidden');
-            this.gameOverOverlay.classList.add('hidden');
-            this.scoreHud.style.display = 'none';
-        } else if (this.gameState === 'playing') {
-            this.startOverlay.classList.add('hidden');
-            this.gameOverOverlay.classList.add('hidden');
-            this.scoreHud.style.display = 'block';
-        } else if (this.gameState === 'gameover') {
-            this.startOverlay.classList.add('hidden');
-            this.gameOverOverlay.classList.remove('hidden');
-            this.scoreHud.style.display = 'none';
-            
-            // Update game over scores
-            this.finalScoreEl.textContent = this.score;
-            this.bestScoreEl.textContent = this.highScore;
-        }
+        this.finalScoreEl.textContent = this.score;
+        this.bestScoreEl.textContent = this.highScore;
     }
-    
+
     draw() {
-        // Clear canvas
-        this.ctx.clearRect(0, 0, this.width, this.height);
-        
-        // Draw background gradient (sky)
-        const skyGradient = this.ctx.createLinearGradient(0, 0, 0, this.height * 0.7);
-        skyGradient.addColorStop(0, '#87CEEB');
-        skyGradient.addColorStop(1, '#98D8E8');
-        this.ctx.fillStyle = skyGradient;
-        this.ctx.fillRect(0, 0, this.width, this.height * 0.7);
-        
-        // Draw pipes
-        this.drawPipes();
-        
-        // Draw ground
-        this.drawGround();
-        
-        // Draw bird
-        this.drawBird();
-    }
-    
-    drawPipes() {
-        for (let i = 0; i < this.pipes.length; i++) {
-            const pipe = this.pipes[i];
-            
-            // Pipe gradient
-            const pipeGradient = this.ctx.createLinearGradient(pipe.x, 0, pipe.x + pipe.width, 0);
-            if (pipe.type === 'top') {
-                pipeGradient.addColorStop(0, '#228B22');
-                pipeGradient.addColorStop(0.5, '#32CD32');
-                pipeGradient.addColorStop(1, '#228B22');
-            } else {
-                pipeGradient.addColorStop(0, '#228B22');
-                pipeGradient.addColorStop(0.5, '#32CD32');
-                pipeGradient.addColorStop(1, '#228B22');
-            }
-            
-            this.ctx.fillStyle = pipeGradient;
-            this.ctx.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
-            
-            // Pipe border
-            this.ctx.strokeStyle = '#006400';
-            this.ctx.lineWidth = 2;
-            this.ctx.strokeRect(pipe.x, pipe.y, pipe.width, pipe.height);
-            
-            // Pipe cap (for top pipes)
-            if (pipe.type === 'top') {
-                this.ctx.fillStyle = '#32CD32';
-                this.ctx.fillRect(pipe.x - 2, pipe.y + pipe.height - 20, pipe.width + 4, 20);
-                this.ctx.strokeStyle = '#006400';
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeRect(pipe.x - 2, pipe.y + pipe.height - 20, pipe.width + 4, 20);
-            } else {
-                // Pipe cap for bottom pipes
-                this.ctx.fillStyle = '#32CD32';
-                this.ctx.fillRect(pipe.x - 2, pipe.y, pipe.width + 4, 20);
-                this.ctx.strokeStyle = '#006400';
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeRect(pipe.x - 2, pipe.y, pipe.width + 4, 20);
-            }
-        }
-    }
-    
-    drawGround() {
-        // Ground
-        this.ctx.fillStyle = '#8B4513';
-        this.ctx.fillRect(0, this.ground.y, this.width, this.ground.height);
-        
-        // Ground pattern
-        this.ctx.fillStyle = '#654321';
-        for (let i = 0; i < this.width; i += 20) {
-            this.ctx.fillRect(i, this.ground.y, 10, this.ground.height);
-        }
-        
-        // Grass top
-        this.ctx.fillStyle = '#228B22';
-        this.ctx.fillRect(0, this.ground.y, this.width, 10);
-    }
-    
-    drawBird() {
-        this.ctx.save();
-        
-        // Translate to bird center for rotation
-        this.ctx.translate(this.bird.x + this.bird.width / 2, this.bird.y + this.bird.height / 2);
-        this.ctx.rotate((this.bird.rotation * Math.PI) / 180);
-        
-        if (this.selectedBird === 'emoji') {
-            // Emoji Sprite Bird - facing right (flipped horizontally)
-            this.ctx.scale(-1, 1);
-            this.ctx.font = '24px Arial';
-            this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.fillText('🐦', 0, 0);
-        } else if (this.selectedBird === 'flame') {
-            // Crimson Flame Bird
-            const flameGradient = this.ctx.createLinearGradient(-17, -12, 17, 12);
-            flameGradient.addColorStop(0, '#FF4500');
-            flameGradient.addColorStop(0.5, '#FFD700');
-            flameGradient.addColorStop(1, '#FF6347');
-            this.ctx.fillStyle = flameGradient;
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, 0, this.bird.width / 2, this.bird.height / 2, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird border
-            this.ctx.strokeStyle = '#FF0000';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-            this.ctx.shadowColor = '#FF4500';
-            this.ctx.shadowBlur = 10;
-            this.ctx.stroke();
-            this.ctx.shadowBlur = 0;
-            
-            // Bird eye
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.arc(8, -3, 3, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird eye white
-            this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.beginPath();
-            this.ctx.arc(9, -4, 1, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird beak
-            this.ctx.fillStyle = '#FF6347';
-            this.ctx.beginPath();
-            this.ctx.moveTo(15, 0);
-            this.ctx.lineTo(22, -2);
-            this.ctx.lineTo(22, 2);
-            this.ctx.closePath();
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#D2691E';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-            
-            // Bird wing with flame effect
-            const wingGradient = this.ctx.createLinearGradient(-13, 0, -3, 4);
-            wingGradient.addColorStop(0, '#FFD700');
-            wingGradient.addColorStop(1, '#FF4500');
-            this.ctx.fillStyle = wingGradient;
-            this.ctx.beginPath();
-            this.ctx.ellipse(-5, 2, 8, 4, -20 * Math.PI / 180, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#FF8C00';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-            this.ctx.shadowColor = '#FFD700';
-            this.ctx.shadowBlur = 8;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-        } else if (this.selectedBird === 'cyber') {
-            // Cyber Neon Bluejay
-            const cyberGradient = this.ctx.createLinearGradient(-17, -12, 17, 12);
-            cyberGradient.addColorStop(0, '#00FFFF');
-            cyberGradient.addColorStop(1, '#FF00FF');
-            this.ctx.fillStyle = cyberGradient;
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, 0, this.bird.width / 2, this.bird.height / 2, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird border with glow
-            this.ctx.strokeStyle = '#00FFFF';
-            this.ctx.lineWidth = 2;
-            this.ctx.shadowColor = '#00FFFF';
-            this.ctx.shadowBlur = 15;
-            this.ctx.stroke();
-            this.ctx.shadowBlur = 0;
-            
-            // Bird eye
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.arc(8, -3, 3, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird eye with glow
-            this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.beginPath();
-            this.ctx.arc(9, -4, 1, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.shadowColor = '#00FFFF';
-            this.ctx.shadowBlur = 5;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-            
-            // Bird beak
-            this.ctx.fillStyle = '#FF00FF';
-            this.ctx.beginPath();
-            this.ctx.moveTo(15, 0);
-            this.ctx.lineTo(22, -2);
-            this.ctx.lineTo(22, 2);
-            this.ctx.closePath();
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#8B00FF';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-            this.ctx.shadowColor = '#FF00FF';
-            this.ctx.shadowBlur = 8;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-            
-            // Bird wing
-            const cyberWingGradient = this.ctx.createLinearGradient(-13, 0, -3, 4);
-            cyberWingGradient.addColorStop(0, '#FF00FF');
-            cyberWingGradient.addColorStop(1, '#00FFFF');
-            this.ctx.fillStyle = cyberWingGradient;
-            this.ctx.beginPath();
-            this.ctx.ellipse(-5, 2, 8, 4, -20 * Math.PI / 180, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#8B00FF';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-            this.ctx.shadowColor = '#FF00FF';
-            this.ctx.shadowBlur = 10;
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-        } else if (this.selectedBird === 'penguin') {
-            // Arctic Penguin
-            // Body (white belly, black back)
-            this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, 2, this.bird.width / 2, this.bird.height / 2 - 2, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Black back
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, -2, this.bird.width / 2, this.bird.height / 2 - 6, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird border
-            this.ctx.strokeStyle = '#87CEEB';
-            this.ctx.lineWidth = 2;
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, 0, this.bird.width / 2, this.bird.height / 2, 0, 0, Math.PI * 2);
-            this.ctx.stroke();
-            
-            // Bird eye
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.arc(8, -3, 3, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird eye white
-            this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.beginPath();
-            this.ctx.arc(9, -4, 1, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Orange beak
-            this.ctx.fillStyle = '#FFA500';
-            this.ctx.beginPath();
-            this.ctx.moveTo(15, 0);
-            this.ctx.lineTo(20, -3);
-            this.ctx.lineTo(20, 3);
-            this.ctx.closePath();
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#FF8C00';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-            
-            // Penguin flippers (wings)
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.ellipse(-6, 4, 6, 3, -30 * Math.PI / 180, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#333333';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-        } else {
-            // Default bird (yellow)
-            this.ctx.fillStyle = '#FFD700';
-            this.ctx.beginPath();
-            this.ctx.ellipse(0, 0, this.bird.width / 2, this.bird.height / 2, 0, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird border
-            this.ctx.strokeStyle = '#FFA500';
-            this.ctx.lineWidth = 2;
-            this.ctx.stroke();
-            
-            // Bird eye
-            this.ctx.fillStyle = '#000000';
-            this.ctx.beginPath();
-            this.ctx.arc(8, -3, 3, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird eye white
-            this.ctx.fillStyle = '#FFFFFF';
-            this.ctx.beginPath();
-            this.ctx.arc(9, -4, 1, 0, Math.PI * 2);
-            this.ctx.fill();
-            
-            // Bird beak
-            this.ctx.fillStyle = '#FF6347';
-            this.ctx.beginPath();
-            this.ctx.moveTo(15, 0);
-            this.ctx.lineTo(22, -2);
-            this.ctx.lineTo(22, 2);
-            this.ctx.closePath();
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#D2691E';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-            
-            // Bird wing
-            this.ctx.fillStyle = '#FFA500';
-            this.ctx.beginPath();
-            this.ctx.ellipse(-5, 2, 8, 4, -20 * Math.PI / 180, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.strokeStyle = '#FF8C00';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-        }
-        
-        this.ctx.restore();
+        FlappyArt.drawBackground(this.ctx, this.width, this.ground.y);
+        for (const pipe of this.pipes) FlappyArt.drawPipe(this.ctx, pipe);
+        FlappyArt.drawGround(this.ctx, this.width, this.ground, this.ground.x);
+        const bird = this.bird;
+        const pose = bird.rotation < -10 ? 'up' : bird.rotation > 25 ? 'down' : 'level';
+        FlappyArt.drawBird(this.ctx, this.selectedBird, bird.x, bird.y, bird.width, bird.height, pose);
     }
 }
 
-// Initialize the game when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    new FlappyBirdGame();
-});
+document.addEventListener('DOMContentLoaded', () => new FlappyBirdGame());

@@ -1,110 +1,103 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Flappy Bird - Arcade Edition</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111321">
+    <meta name="description" content="Choose a pixel bird and fly through the neon city in Arcade Portal's Flappy Bird.">
+    <title>Flappy Bird · Arcade Portal</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="../../styles/styles.css">
+    <link rel="stylesheet" href="../arcade-nav.css">
     <link rel="stylesheet" href="styles/style.css">
+    <script defer src="js/art.js"></script>
+    <script defer src="js/main.js"></script>
 </head>
 <body>
-    <div class="container">
-        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
-        <header class="game-header">
-            <h1 class="game-title">FLAPPY BIRD</h1>
-            <p class="game-subtitle">Modern Arcade Edition</p>
-        </header>
+    <header class="site-header">
+        <nav class="shell topbar" aria-label="Arcade navigation">
+            <a class="brand" href="../../index.html" aria-label="Arcade Portal home">
+                <span class="brand-mark" aria-hidden="true"><i></i></span>
+                <span>Arcade<span class="brand-accent">Portal</span></span>
+            </a>
+            <a class="back-home-btn" href="../../index.html#library">← Back to Arcade</a>
+        </nav>
+    </header>
 
-        <main class="game-main">
+    <main class="flight-deck">
+        <div class="game-intro">
+            <header class="game-heading">
+                <h1>Flappy <span>Bird</span></h1>
+                <p>Fly through the gaps. Each pair of pipes you clear earns one point.</p>
+            </header>
+            <section class="controls" aria-labelledby="controls-title">
+                <h2 id="controls-title">Flight controls</h2>
+                <dl>
+                    <div><dt>Keyboard</dt><dd><kbd>Space</kbd> or <kbd aria-label="Up arrow">↑</kbd></dd></div>
+                    <div><dt>Mouse / touch</dt><dd>Click or tap to flap</dd></div>
+                </dl>
+            </section>
+        </div>
+
+        <section class="cabinet" aria-label="Flappy Bird game">
             <div class="canvas-wrapper">
-                <canvas id="gameCanvas" width="400" height="600" aria-label="Flappy Bird Game Canvas"></canvas>
-                
-                <!-- Score Display -->
-                <div class="score-hud" id="scoreHud">
-                    <div class="score-value" id="currentScore">0</div>
+                <canvas id="gameCanvas" width="400" height="600" tabindex="-1" aria-label="Flight area. Press Space or Up Arrow, click, or tap to flap.">
+                    This game requires a browser with canvas support.
+                </canvas>
+                <div class="score-hud hidden" id="scoreHud">
+                    <span>Score</span><strong id="currentScore">0</strong>
                 </div>
-                
-                <!-- Start Screen Overlay -->
-                <div class="overlay start-overlay" id="startOverlay">
-                    <div class="overlay-card start-card">
-                        <h2 class="overlay-title">FLAPPY BIRD</h2>
-                        <p class="overlay-subtitle">Choose Your Bird & Fly</p>
-                        
-                        <div class="character-selection">
-                            <h3 class="selection-title">Select Character</h3>
-                            <div class="character-grid">
-                                <button class="character-option active" data-character="flame" id="charFlame" aria-label="Crimson Flame Bird">
-                                    <div class="character-preview flame-preview">
-                                        <div class="bird-sprite flame-sprite"></div>
-                                    </div>
-                                    <div class="character-name">Crimson Flame</div>
-                                </button>
-                                <button class="character-option" data-character="cyber" id="charCyber" aria-label="Cyber Neon Bluejay">
-                                    <div class="character-preview cyber-preview">
-                                        <div class="bird-sprite cyber-sprite"></div>
-                                    </div>
-                                    <div class="character-name">Cyber Neon</div>
-                                </button>
-                                <button class="character-option" data-character="penguin" id="charPenguin" aria-label="Arctic Penguin">
-                                    <div class="character-preview penguin-preview">
-                                        <div class="bird-sprite penguin-sprite"></div>
-                                    </div>
-                                    <div class="character-name">Arctic Penguin</div>
-                                </button>
-                                <button class="character-option" data-character="emoji" id="charEmoji" aria-label="Emoji Sprite Bird">
-                                    <div class="character-preview emoji-preview">
-                                        <div class="bird-sprite emoji-sprite">🐦</div>
-                                    </div>
-                                    <div class="character-name">Emoji Bird</div>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="instructions">
-                            <div class="instruction-item">
-                                <span class="instruction-icon">🖱️</span>
-                                <span>Click or Tap to Flap</span>
-                            </div>
-                            <div class="instruction-item">
-                                <span class="instruction-icon">⌨️</span>
-                                <span>Spacebar or Arrow Up</span>
-                            </div>
-                            <div class="instruction-item">
-                                <span class="instruction-icon">🎯</span>
-                                <span>Avoid Pipes & Ground</span>
-                            </div>
-                        </div>
-                        <button class="start-btn" id="startBtn">START GAME</button>
-                    </div>
-                </div>
-                
-                <!-- Game Over Screen Overlay -->
-                <div class="overlay gameover-overlay" id="gameOverOverlay">
+
+                <section class="overlay" id="startOverlay" aria-labelledby="start-title">
                     <div class="overlay-card">
-                        <h2 class="overlay-title gameover-title">GAME OVER</h2>
-                        <div class="score-summary">
-                            <div class="score-row">
-                                <span class="score-label">Score</span>
-                                <span class="score-number" id="finalScore">0</span>
-                            </div>
-                            <div class="score-row">
-                                <span class="score-label">Best</span>
-                                <span class="score-number best-score" id="bestScore">0</span>
-                            </div>
-                        </div>
-                        <button class="restart-btn" id="restartBtn">PLAY AGAIN</button>
+                        <h2 id="start-title">Ready to fly?</h2>
+                        <button type="button" id="chooseBirdBtn" class="bird-choice" aria-label="Choose bird">
+                            <canvas width="68" height="48" id="selectedBirdPreview" data-bird-preview="flame" aria-hidden="true"></canvas>
+                            <span><small>Choose bird</small><strong id="selectedBirdName">Crimson Flame Bird</strong></span>
+                            <b aria-hidden="true">›</b>
+                        </button>
+                        <button type="button" id="startBtn" class="launch-btn"><i aria-hidden="true"></i>Start game</button>
                     </div>
-                </div>
+                </section>
+
+                <section class="overlay hidden" id="characterOverlay" aria-labelledby="character-title">
+                    <div class="overlay-card picker-card">
+                        <h2 id="character-title">Choose bird</h2>
+                        <div class="character-grid" role="group" aria-labelledby="character-title">
+                            <button type="button" class="character-option active" data-character="flame" id="charFlame" aria-pressed="true" aria-label="Crimson Flame Bird">
+                                <canvas width="68" height="48" data-bird-preview="flame" aria-hidden="true"></canvas>
+                                <span>Crimson Flame Bird</span>
+                            </button>
+                            <button type="button" class="character-option" data-character="cyber" id="charCyber" aria-pressed="false" aria-label="Cyber Neon Bluejay">
+                                <canvas width="68" height="48" data-bird-preview="cyber" aria-hidden="true"></canvas>
+                                <span>Cyber Neon Bluejay</span>
+                            </button>
+                            <button type="button" class="character-option" data-character="penguin" id="charPenguin" aria-pressed="false" aria-label="Arctic Penguin">
+                                <canvas width="68" height="48" data-bird-preview="penguin" aria-hidden="true"></canvas>
+                                <span>Arctic Penguin</span>
+                            </button>
+                            <button type="button" class="character-option" data-character="emoji" id="charEmoji" aria-pressed="false" aria-label="Emoji Sprite Bird">
+                                <canvas width="68" height="48" data-bird-preview="emoji" aria-hidden="true"></canvas>
+                                <span>Emoji Sprite Bird</span>
+                            </button>
+                        </div>
+                        <button type="button" id="confirmBirdBtn" class="launch-btn">Confirm bird</button>
+                    </div>
+                </section>
+
+                <section class="overlay hidden" id="gameOverOverlay" aria-labelledby="over-title">
+                    <div class="overlay-card result-card">
+                        <h2 id="over-title">Game over</h2>
+                        <dl class="score-summary">
+                            <div><dt>Score</dt><dd id="finalScore">0</dd></div>
+                            <div><dt>Best</dt><dd id="bestScore">0</dd></div>
+                        </dl>
+                        <button type="button" id="restartBtn" class="launch-btn"><i aria-hidden="true"></i>Play again</button>
+                        <button type="button" id="changeBirdBtn" class="secondary-btn">Change bird</button>
+                    </div>
+                </section>
             </div>
-        </main>
-
-        <footer class="game-footer">
-            <p class="footer-text">Built with HTML5 Canvas, CSS3 & Vanilla JavaScript</p>
-        </footer>
-    </div>
-
-    <script src="js/main.js"></script>
+        </section>
+    </main>
 </body>
 </html>

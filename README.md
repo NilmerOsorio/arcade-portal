@@ -20,7 +20,7 @@ To play locally, download and extract the project, then open the root `index.htm
 
 - **2048** — Slide matching tiles together to reach 2048.
 - **Dino Runner** — Jump over cacti and keep the run going.
-- **Flappy Bird** — Pick a bird and fly through gaps in the pipes.
+- **Flappy Bird** — Choose one of four pixel-art birds and fly through neon pipes. Tap, click, or press Space or ↑ to flap. Each pipe pair you clear earns one point.
 - **Memory Card** — Flip cards and remember where their partners are.
 - **Minesweeper** — Read the clues to uncover safe tiles and flag mines.
 - **Pong** — Rally against a friend or a computer opponent.
@@ -39,7 +39,7 @@ Arcade-Portal/
 ├── script/
 │   └── script.js          # Game catalog, card rendering, and search
 ├── styles/
-│   └── styels.css         # Portal theme and responsive grid
+│   └── styles.css         # Portal theme and responsive grid
 └── games/
     ├── arcade-nav.css     # Shared return-link styling
     ├── 2048/
@@ -65,7 +65,7 @@ I used HTML, CSS, and JavaScript to build the portal. The library handles browsi
 | --- | --- |
 | `index.html` | The library page, including its search box, category filters, and space for game cards. |
 | `script/script.js` | The game catalog, pixel artwork, and code that shows matching cards as you search. |
-| `styles/styels.css` | The portal’s neon colors, card effects, and grid that adapts to different screen sizes. |
+| `styles/styles.css` | The portal’s neon colors, card effects, and grid that adapts to different screen sizes. |
 | `games/` | One folder per game, each with its own page, styles, scripts, and any media it uses. |
 | `games/arcade-nav.css` | The shared style for the **Back to Arcade** link. |
 
