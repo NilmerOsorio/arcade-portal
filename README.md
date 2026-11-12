@@ -19,7 +19,7 @@ To play locally, download and extract the project, then open the root `index.htm
 ## 👾 Included Games
 
 - **2048** — Slide matching tiles together to reach 2048.
-- **Dino Runner** — Jump over cacti and keep the run going.
+- **Dino Runner** — Jump over cacti as the desert scrolls faster, even while your dinosaur rises and falls. Cacti appear more frequently as the pace builds, with at least 0.8 seconds between spawns. Each new run starts at the original speed.
 - **Flappy Bird** — Choose one of four pixel-art birds and fly through neon pipes. Tap, click, or press Space or ↑ to flap. Each pipe pair you clear earns one point.
 - **Memory Card** — Flip cards and remember where their partners are.
 - **Minesweeper** — Read the clues to uncover safe tiles and flag mines.

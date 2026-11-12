@@ -1,42 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Custom Pixel Art Dino Runner</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#111321">
+    <meta name="description" content="Jump over cacti in Arcade Portal's pixel-art desert runner and beat your high score.">
+    <title>Dino Runner · Arcade Portal</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="../../styles/styles.css">
+    <link rel="stylesheet" href="../arcade-nav.css">
     <link rel="stylesheet" href="styles/style.css">
+    <script defer src="js/art.js"></script>
+    <script defer src="js/main.js"></script>
 </head>
 <body>
-    <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
-    <div class="game-wrapper">
-        <div class="hud">
-            <div class="score">SCORE: <span id="score">0</span></div>
-            <div class="high-score">HIGH: <span id="highScore">0</span></div>
-        </div>
+    <header class="site-header">
+        <nav class="shell topbar" aria-label="Arcade navigation">
+            <a class="brand" href="../../index.html" aria-label="Arcade Portal home">
+                <span class="brand-mark" aria-hidden="true"><i></i></span>
+                <span>Arcade<span class="brand-accent">Portal</span></span>
+            </a>
+            <a href="../../index.html" class="back-home-btn">← Back to Arcade</a>
+        </nav>
+    </header>
 
-        <canvas id="gameCanvas" width="800" height="400" aria-label="Dino Runner Game"></canvas>
-
-        <div id="startScreen" class="overlay">
-            <div class="overlay-card">
-                <h1>DINO RUNNER</h1>
-                <p>Press SPACE / UP / TAP to jump</p>
-                <button id="startBtn">START GAME</button>
+    <main class="runner-shell">
+        <header class="game-heading">
+            <h1>Dino <span>Runner</span></h1>
+            <div class="game-tags" aria-label="Game genres">
+                <span class="tag" data-tag="action">Action</span>
+                <span class="tag" data-tag="endless">Endless</span>
             </div>
-        </div>
+        </header>
 
-        <div id="gameOverScreen" class="overlay hidden">
-            <div class="overlay-card">
-                <h1>GAME OVER</h1>
-                <p>Your Score: <span id="finalScore">0</span></p>
-                <p>High Score: <span id="finalHighScore">0</span></p>
-                <button id="restartBtn">RESTART</button>
+        <section class="cabinet" aria-label="Dino Runner game">
+            <div class="hud">
+                <div class="status"><i aria-hidden="true"></i><span id="statusText" role="status">Ready</span></div>
+                <dl class="counters">
+                    <div><dt>Score</dt><dd id="score">00000</dd></div>
+                    <div><dt>Best</dt><dd id="highScore">00000</dd></div>
+                </dl>
             </div>
-        </div>
-    </div>
 
-    <script src="js/main.js"></script>
+            <div class="stage">
+                <canvas id="gameCanvas" width="800" height="360" tabindex="-1" aria-label="Desert track. Press Space or Up Arrow, click, or tap to jump.">
+                    This game requires a browser with canvas support.
+                </canvas>
+                <section id="startScreen" class="overlay" aria-labelledby="start-title">
+                    <div class="overlay-card">
+                        <h2 id="start-title">Ready to run?</h2>
+                        <p>Leap over the cacti and see how far you can go.</p>
+                        <button id="startBtn" type="button" class="play-button">Start run</button>
+                    </div>
+                </section>
+                <section id="gameOverScreen" class="overlay" aria-labelledby="result-title" hidden>
+                    <div class="overlay-card">
+                        <h2 id="result-title">Game over</h2>
+                        <dl class="result">
+                            <div><dt>Score</dt><dd id="finalScore">00000</dd></div>
+                            <div><dt>Best</dt><dd id="finalHighScore">00000</dd></div>
+                        </dl>
+                        <button id="restartBtn" type="button" class="play-button">Run again</button>
+                    </div>
+                </section>
+            </div>
+
+            <footer class="controls" aria-label="Jump controls">
+                <span><kbd>Space</kbd> or <kbd aria-label="Up arrow">↑</kbd> to jump</span>
+                <span class="pointer-hint">Click or tap the track to jump</span>
+            </footer>
+        </section>
+    </main>
 </body>
 </html>
