@@ -150,20 +150,15 @@ function createRunnerArt(canvas, groundY) {
         });
     }
 
-    const dinoBody = [
+    const dinoSprite = sprite([
         '.............#######.', '............#hhhhhhh#', '............#hhw#llh#',
         '............#ll##lll#', '............#lllllll#', '............#lll#####',
         '............#lhhh#...', '..........###ll##....', '.#.......#sllll#.....',
         '.h#.....#sllhhl#.....', '.hl#...#sllllll##....', '.shl###slllhhlllh#...',
         '..shllllllhhlhl#.#...', '...slllllllslll#.....', '....sslllsslll#......',
-        '.....#sssssll#.......', '......##sssll#.......'
-    ];
-    const dinoColors = { '#':'#233a44', h:'#c3f39a', w:'#fff3c7', l:'#8ed984', s:'#4c9e76' };
-    const poses = [
-        ['......#ls#.#l#.......','.....#ss#..#l#.......','.....###...#lh#......','...........####......'],
-        ['.......#l#..#l#......','.......#l#...#lh#....','......#lh#...####....','......####...........'],
-        ['......#ls##ll#.......','.....#ss#..###.......','.....###.............','.....................']
-    ].map(legs => sprite([...dinoBody, ...legs], dinoColors));
+        '.....#sssssll#.......', '......##sssll#.......', '......#ls#.#l#.......',
+        '.....#ss#..#l#.......', '.....###...#lh#......', '...........####......'
+    ], { '#':'#233a44', h:'#c3f39a', w:'#fff3c7', l:'#8ed984', s:'#4c9e76' });
 
     const cactus = sprite([
         '.....##....', '....#hl#...', '....#hl#...', '.#..#hl#...', '#hl.#hl#...',
@@ -203,7 +198,6 @@ function createRunnerArt(canvas, groundY) {
             const kick = Math.floor(distance / 6) % 5;
             rect(ctx, '#cd927e', x - kick * 2, ground - 2 - Math.floor(kick / 2), 2, 1);
         }
-        const pose = dino.grounded ? Math.floor(distance / 38) % 2 : 2;
-        ctx.drawImage(poses[pose], x, y, w, h);
+        ctx.drawImage(dinoSprite, x, y, w, h);
     };
 }

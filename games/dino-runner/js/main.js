@@ -12,22 +12,25 @@ function initRunner() {
     const restartBtn = document.getElementById('restartBtn');
     const statusText = document.getElementById('statusText');
 
-    // Advance the original jump and speed values in fixed 60 Hz steps.
-    const tickMs = 1000 / 60;
-    const baseSpeed = 6;
-    const maxSpeed = 14;
+    // Speeds are in canvas pixels per second. All timers use seconds of active play.
+    const baseSpeed = 360;
+    const maxSpeed = 840;
+    const rampSeconds = 64;
+    const acceleration = (maxSpeed - baseSpeed) / rampSeconds;
+    const openingSpawnGap = 1.35;
+    const minSpawnGap = 0.8; // One jump lasts 0.65 seconds, leaving time to land.
+    const gravity = 2880;
+    const jumpVelocity = -936;
     const scoreKey = 'dinoRunnerHighScore';
     const dino = { x: 80, y: groundY - 72, width: 64, height: 72, vy: 0, grounded: true };
     const obstacles = [];
     let running = false;
-    let speed = baseSpeed;
+    let elapsed = 0;
     let distance = 0;
     let score = 0;
     let highScore = readHighScore();
-    let ticksPlayed = 0;
-    let ticksUntilCactus = 0;
+    let nextCactusAt = 0;
     let lastTime = 0;
-    let accumulator = 0;
 
     function readHighScore() {
         try {
@@ -42,6 +45,19 @@ function initRunner() {
         return String(value).padStart(5, '0');
     }
 
+    // Distance under constant acceleration, followed by travel at the speed cap.
+    function distanceAt(seconds) {
+        const rampTime = Math.min(seconds, rampSeconds);
+        const averageRampSpeed = baseSpeed + acceleration * rampTime / 2;
+        return averageRampSpeed * rampTime + maxSpeed * (seconds - rampTime);
+    }
+
+    function spawnGap(seconds) {
+        const progress = Math.min(seconds / rampSeconds, 1);
+        const shortestGap = openingSpawnGap + (minSpawnGap - openingSpawnGap) * progress;
+        return shortestGap + Math.random() * 0.2;
+    }
+
     function draw() {
         drawScene({ distance, dino, obstacles, preview: !startScreen.hidden });
     }
@@ -49,11 +65,10 @@ function initRunner() {
     function startRun() {
         if (running) return;
         running = true;
-        speed = baseSpeed;
+        elapsed = 0;
         distance = 0;
         score = 0;
-        ticksPlayed = 0;
-        ticksUntilCactus = 54 + Math.floor(Math.random() * 36);
+        nextCactusAt = spawnGap(0);
         obstacles.length = 0;
         dino.y = groundY - dino.height;
         dino.vy = 0;
@@ -65,7 +80,6 @@ function initRunner() {
         scoreEl.textContent = formatScore(score);
         canvas.focus({ preventScroll: true });
         lastTime = performance.now();
-        accumulator = 0;
         draw();
         requestAnimationFrame(frame);
     }
@@ -96,10 +110,9 @@ function initRunner() {
             dino.y + dino.height - inset > cactus.y + inset;
     }
 
-    function step() {
-        ticksPlayed++;
-        if (ticksPlayed % 72 === 0) speed = Math.min(maxSpeed, speed + 0.15);
-        distance += speed;
+    function step(dt) {
+        elapsed += dt;
+        distance = distanceAt(elapsed);
         const points = Math.floor(distance / 100);
         if (points !== score) {
             score = points;
@@ -107,8 +120,8 @@ function initRunner() {
         }
 
         if (!dino.grounded) {
-            dino.vy += 0.8;
-            dino.y += dino.vy;
+            dino.y += dino.vy * dt + gravity * dt * dt / 2;
+            dino.vy += gravity * dt;
             if (dino.y >= groundY - dino.height) {
                 dino.y = groundY - dino.height;
                 dino.vy = 0;
@@ -116,29 +129,29 @@ function initRunner() {
             }
         }
 
-        ticksUntilCactus--;
-        if (ticksUntilCactus === 0) {
+        if (elapsed >= nextCactusAt) {
             const height = 40 + Math.floor(Math.random() * 31);
-            obstacles.push({ x: canvas.width + 20, y: groundY - height, width: height * 0.6, height });
-            const difficulty = (speed - baseSpeed) / (maxSpeed - baseSpeed);
-            // A jump takes 39 ticks. Even at top speed, leave time to land and jump again.
-            ticksUntilCactus = Math.round(54 - 9 * difficulty + Math.random() * 15);
+            // Place the cactus on the track at its scheduled time, even between frames.
+            const trackX = distanceAt(nextCactusAt) + canvas.width + 20;
+            obstacles.push({ trackX, y: groundY - height, width: height * 0.6, height });
+            nextCactusAt += spawnGap(nextCactusAt);
         }
-        for (const cactus of obstacles) cactus.x -= speed;
+        for (const cactus of obstacles) cactus.x = cactus.trackX - distance;
         if (obstacles.length && obstacles[0].x + obstacles[0].width < 0) obstacles.shift();
         if (obstacles.some(hitsCactus)) endRun();
     }
 
     function frame(time) {
-        accumulator += Math.min(100, Math.max(0, time - lastTime));
+        // Consume fractional frames too. Short steps keep collision checks reliable
+        // on slow displays, and the limit avoids skipping the track after a tab sleeps.
+        let remaining = Math.min(0.1, Math.max(0, (time - lastTime) / 1000));
         lastTime = time;
-        if (accumulator >= tickMs) {
-            while (running && accumulator >= tickMs) {
-                accumulator -= tickMs;
-                step();
-            }
-            draw();
+        while (running && remaining > 0) {
+            const dt = Math.min(remaining, 1 / 60);
+            step(dt);
+            remaining -= dt;
         }
+        draw();
         if (running) requestAnimationFrame(frame);
     }
 
@@ -146,7 +159,7 @@ function initRunner() {
         if (!running) {
             startRun();
         } else if (dino.grounded) {
-            dino.vy = -16;
+            dino.vy = jumpVelocity;
             dino.grounded = false;
         }
     }
