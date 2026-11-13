@@ -10,7 +10,7 @@ const games = [
     id: "dino-runner",
     title: "Pixel Art Dino Runner",
     tags: ["Action", "Endless"],
-    description: "Jump over cacti and obstacles in this pixel-art side-scrolling endless runner.",
+    description: "Jump over cacti and duck under birds as this pixel-art desert runner picks up speed.",
     icon: "🦖",
   },
   {
