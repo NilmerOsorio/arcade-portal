@@ -4,13 +4,16 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#111321">
-    <meta name="description" content="Jump over cacti in Arcade Portal's pixel-art desert runner and beat your high score.">
+    <meta name="description" content="Jump over cacti and dodge flying pterosaurs in Arcade Portal's pixel-art desert runner.">
     <title>Dino Runner · Arcade Portal</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="../../styles/styles.css">
     <link rel="stylesheet" href="../arcade-nav.css">
     <link rel="stylesheet" href="styles/style.css">
     <script defer src="js/art.js"></script>
+    <script defer src="js/physics.js"></script>
+    <script defer src="js/difficulty.js"></script>
+    <script defer src="js/course.js"></script>
     <script defer src="js/main.js"></script>
 </head>
 <body>
@@ -35,7 +38,10 @@
 
         <section class="cabinet" aria-label="Dino Runner game">
             <div class="hud">
-                <div class="status"><i aria-hidden="true"></i><span id="statusText" role="status">Ready</span></div>
+                <div class="run-info">
+                    <div class="status"><i aria-hidden="true"></i><span id="statusText" role="status">Ready</span></div>
+                    <span id="difficultyLevel" role="status" aria-atomic="true"></span>
+                </div>
                 <dl class="counters">
                     <div><dt>Score</dt><dd id="score">00000</dd></div>
                     <div><dt>Best</dt><dd id="highScore">00000</dd></div>
@@ -43,13 +49,13 @@
             </div>
 
             <div class="stage">
-                <canvas id="gameCanvas" width="800" height="360" tabindex="-1" aria-label="Desert track. Press Space or Up Arrow, click, or tap to jump.">
+                <canvas id="gameCanvas" width="800" height="360" tabindex="-1" aria-label="Desert track. Hold Space, Up Arrow, or the track to jump higher. Hold Down Arrow or the Duck button to crouch.">
                     This game requires a browser with canvas support.
                 </canvas>
                 <section id="startScreen" class="overlay" aria-labelledby="start-title">
                     <div class="overlay-card">
                         <h2 id="start-title">Ready to run?</h2>
-                        <p>Leap over the cacti and see how far you can go.</p>
+                        <p>Leap over cacti and low birds. Duck under birds at head height.</p>
                         <button id="startBtn" type="button" class="play-button">Start run</button>
                     </div>
                 </section>
@@ -65,9 +71,12 @@
                 </section>
             </div>
 
-            <footer class="controls" aria-label="Jump controls">
-                <span><kbd>Space</kbd> or <kbd aria-label="Up arrow">↑</kbd> to jump</span>
-                <span class="pointer-hint">Click or tap the track to jump</span>
+            <footer class="controls" aria-label="Game controls">
+                <div class="control-hints">
+                    <span><kbd>Space</kbd> / <kbd aria-label="Up arrow">↑</kbd> or tap the track to jump. Hold to go higher.</span>
+                    <span><kbd aria-label="Down arrow">↓</kbd> Duck on the ground or drop faster while falling.</span>
+                </div>
+                <button id="duckBtn" class="duck-button" type="button" aria-label="Hold to duck" disabled><b aria-hidden="true">↓</b> Hold to duck</button>
             </footer>
         </section>
     </main>

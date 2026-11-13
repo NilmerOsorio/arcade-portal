@@ -10,26 +10,18 @@ function initRunner() {
     const gameOverScreen = document.getElementById('gameOverScreen');
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
+    const duckBtn = document.getElementById('duckBtn');
     const statusText = document.getElementById('statusText');
+    const difficultyEl = document.getElementById('difficultyLevel');
 
-    // Speeds are in canvas pixels per second. All timers use seconds of active play.
-    const baseSpeed = 360;
-    const maxSpeed = 840;
-    const rampSeconds = 64;
-    const acceleration = (maxSpeed - baseSpeed) / rampSeconds;
-    const openingSpawnGap = 1.35;
-    const minSpawnGap = 0.8; // One jump lasts 0.65 seconds, leaving time to land.
-    const gravity = 2880;
-    const jumpVelocity = -936;
     const scoreKey = 'dinoRunnerHighScore';
-    const dino = { x: 80, y: groundY - 72, width: 64, height: 72, vy: 0, grounded: true };
-    const obstacles = [];
+    const jumpInputs = new Set();
+    const duckInputs = new Set();
+    let dino = RunnerPhysics.createDino(groundY);
+    let course = RunnerCourse.createCourse(groundY, canvas.width);
+    let run = RunnerDifficulty.createRun();
     let running = false;
-    let elapsed = 0;
-    let distance = 0;
-    let score = 0;
     let highScore = readHighScore();
-    let nextCactusAt = 0;
     let lastTime = 0;
 
     function readHighScore() {
@@ -45,39 +37,27 @@ function initRunner() {
         return String(value).padStart(5, '0');
     }
 
-    // Distance under constant acceleration, followed by travel at the speed cap.
-    function distanceAt(seconds) {
-        const rampTime = Math.min(seconds, rampSeconds);
-        const averageRampSpeed = baseSpeed + acceleration * rampTime / 2;
-        return averageRampSpeed * rampTime + maxSpeed * (seconds - rampTime);
-    }
-
-    function spawnGap(seconds) {
-        const progress = Math.min(seconds / rampSeconds, 1);
-        const shortestGap = openingSpawnGap + (minSpawnGap - openingSpawnGap) * progress;
-        return shortestGap + Math.random() * 0.2;
-    }
-
     function draw() {
-        drawScene({ distance, dino, obstacles, preview: !startScreen.hidden });
+        drawScene({ elapsed: run.elapsed, distance: run.distance, dino, obstacles: course.obstacles, preview: !startScreen.hidden });
+    }
+
+    function showLevel() {
+        difficultyEl.textContent = `Level ${run.level} · ${run.name}`;
     }
 
     function startRun() {
         if (running) return;
         running = true;
-        elapsed = 0;
-        distance = 0;
-        score = 0;
-        nextCactusAt = spawnGap(0);
-        obstacles.length = 0;
-        dino.y = groundY - dino.height;
-        dino.vy = 0;
-        dino.grounded = true;
+        run = RunnerDifficulty.createRun();
+        dino = RunnerPhysics.createDino(groundY);
+        course = RunnerCourse.createCourse(groundY, canvas.width);
+        duckBtn.disabled = false;
 
         startScreen.hidden = true;
         gameOverScreen.hidden = true;
         statusText.textContent = 'Running';
-        scoreEl.textContent = formatScore(score);
+        scoreEl.textContent = formatScore(run.score);
+        showLevel();
         canvas.focus({ preventScroll: true });
         lastTime = performance.now();
         draw();
@@ -86,9 +66,13 @@ function initRunner() {
 
     function endRun() {
         running = false;
+        const hadGameFocus = document.activeElement === canvas || document.activeElement === duckBtn;
+        jumpInputs.clear();
+        duckInputs.clear();
+        duckBtn.disabled = true;
         highScore = Math.max(highScore, readHighScore());
-        if (score > highScore) {
-            highScore = score;
+        if (run.score > highScore) {
+            highScore = run.score;
             try {
                 localStorage.setItem(scoreKey, String(highScore));
             } catch {
@@ -96,49 +80,25 @@ function initRunner() {
             }
         }
         statusText.textContent = 'Game over';
-        finalScoreEl.textContent = formatScore(score);
+        finalScoreEl.textContent = formatScore(run.score);
         finalHighScoreEl.textContent = highScoreEl.textContent = formatScore(highScore);
         gameOverScreen.hidden = false;
-        if (document.activeElement === canvas) restartBtn.focus({ preventScroll: true });
-    }
-
-    function hitsCactus(cactus) {
-        const inset = 6;
-        return dino.x + inset < cactus.x + cactus.width - inset &&
-            dino.x + dino.width - inset > cactus.x + inset &&
-            dino.y + inset < cactus.y + cactus.height - inset &&
-            dino.y + dino.height - inset > cactus.y + inset;
+        if (hadGameFocus) restartBtn.focus({ preventScroll: true });
     }
 
     function step(dt) {
-        elapsed += dt;
-        distance = distanceAt(elapsed);
-        const points = Math.floor(distance / 100);
-        if (points !== score) {
-            score = points;
-            scoreEl.textContent = formatScore(score);
-        }
+        const previousScore = run.score;
+        if (run.advance(dt)) showLevel();
+        if (run.score !== previousScore) scoreEl.textContent = formatScore(run.score);
 
-        if (!dino.grounded) {
-            dino.y += dino.vy * dt + gravity * dt * dt / 2;
-            dino.vy += gravity * dt;
-            if (dino.y >= groundY - dino.height) {
-                dino.y = groundY - dino.height;
-                dino.vy = 0;
-                dino.grounded = true;
+        RunnerPhysics.step(dino, dt, groundY);
+        course.update(run);
+        for (const obstacle of course.obstacles) {
+            if (RunnerPhysics.hitsObstacle(dino, obstacle)) {
+                endRun();
+                break;
             }
         }
-
-        if (elapsed >= nextCactusAt) {
-            const height = 40 + Math.floor(Math.random() * 31);
-            // Place the cactus on the track at its scheduled time, even between frames.
-            const trackX = distanceAt(nextCactusAt) + canvas.width + 20;
-            obstacles.push({ trackX, y: groundY - height, width: height * 0.6, height });
-            nextCactusAt += spawnGap(nextCactusAt);
-        }
-        for (const cactus of obstacles) cactus.x = cactus.trackX - distance;
-        if (obstacles.length && obstacles[0].x + obstacles[0].width < 0) obstacles.shift();
-        if (obstacles.some(hitsCactus)) endRun();
     }
 
     function frame(time) {
@@ -147,7 +107,7 @@ function initRunner() {
         let remaining = Math.min(0.1, Math.max(0, (time - lastTime) / 1000));
         lastTime = time;
         while (running && remaining > 0) {
-            const dt = Math.min(remaining, 1 / 60);
+            const dt = Math.min(remaining, 1 / 120);
             step(dt);
             remaining -= dt;
         }
@@ -155,31 +115,66 @@ function initRunner() {
         if (running) requestAnimationFrame(frame);
     }
 
-    function jumpOrStart() {
+    function pressJump(source) {
         if (!running) {
             startRun();
-        } else if (dino.grounded) {
-            dino.vy = jumpVelocity;
-            dino.grounded = false;
+        } else {
+            jumpInputs.add(source);
+            RunnerPhysics.jump(dino);
         }
+    }
+
+    function pressDuck(source) {
+        if (!running) return;
+        duckInputs.add(source);
+        RunnerPhysics.setDuck(dino, true);
+    }
+
+    // A keyboard key and a finger can hold the same action independently.
+    function release(source) {
+        if (jumpInputs.delete(source) && !jumpInputs.size) RunnerPhysics.releaseJump(dino);
+        if (duckInputs.delete(source) && !duckInputs.size) RunnerPhysics.setDuck(dino, false);
     }
 
     startBtn.addEventListener('click', startRun);
     restartBtn.addEventListener('click', startRun);
-    canvas.addEventListener('pointerdown', event => {
-        if (event.isPrimary && event.button === 0) jumpOrStart();
-    });
+    function bindHold(element, press) {
+        element.addEventListener('pointerdown', event => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            element.setPointerCapture(event.pointerId);
+            press(event.pointerId);
+        });
+        for (const type of ['pointerup', 'pointercancel', 'lostpointercapture']) {
+            element.addEventListener(type, event => release(event.pointerId));
+        }
+    }
+    bindHold(canvas, pressJump);
+    bindHold(duckBtn, pressDuck);
     document.addEventListener('keydown', event => {
-        if (event.code !== 'Space' && event.code !== 'ArrowUp') return;
         if (event.altKey || event.ctrlKey || event.metaKey || event.defaultPrevented) return;
-        // Preserve navigation and let Space activate a focused button natively.
-        if (event.target.closest?.('a') || (event.code === 'Space' && event.target.closest?.('button'))) return;
+        if (event.target.closest?.('a')) return;
+        const duckButtonKey = event.target === duckBtn && (event.code === 'Space' || event.code === 'Enter');
+        if (event.code === 'ArrowDown' || duckButtonKey) {
+            if (!running) return;
+            event.preventDefault();
+            if (!event.repeat) pressDuck(event.code);
+            return;
+        }
+        if (event.code !== 'Space' && event.code !== 'ArrowUp') return;
+        if (event.code === 'Space' && event.target.closest?.('button')) return;
         event.preventDefault();
-        if (!event.repeat) jumpOrStart();
+        if (!event.repeat) pressJump(event.code);
+    });
+    document.addEventListener('keyup', event => release(event.code));
+    window.addEventListener('blur', () => {
+        for (const source of jumpInputs) release(source);
+        for (const source of duckInputs) release(source);
     });
 
     statusText.textContent = 'Ready';
     highScoreEl.textContent = formatScore(highScore);
+    showLevel();
     draw();
 }
 

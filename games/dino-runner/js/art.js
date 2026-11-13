@@ -64,11 +64,22 @@ function createRunnerArt(canvas, groundY) {
             const band = Math.min(4, Math.floor((dy + radius) * 5 / (radius * 2)));
             rect(p, sunlight[band], sunX - half, sunY + dy, 2 * half + 1, 1);
         }
-        // Sparse banks of vapour cross the lower sky, leaving the play area calm.
-        for (const [x, y, w] of [[-9,61,43],[37,48,33],[117,53,50],[193,64,28],[253,71,39],[344,58,53]]) {
-            rect(p, '#a46d8d', x, y, w, 2);
-            rect(p, '#b97d96', x + 5, y - 1, Math.floor(w * 0.68), 2);
-            rect(p, '#c48b9e', x + 12, y - 2, Math.floor(w * 0.26), 1);
+    });
+
+    // These transparent sky layers stay behind the ridges and outside the obstacle list.
+    const highClouds = bitmap(width, 46, p => {
+        for (const [x, y, w] of [[17,28,40],[116,37,53],[241,20,32],[337,34,46]]) {
+            rect(p, '#ab8ba755', x, y, w, 1);
+            rect(p, '#d2b2c14d', x + 5, y - 1, Math.floor(w * .7), 1);
+            rect(p, '#d2b2c14d', x + 9, y - 2, Math.floor(w * .26), 1);
+        }
+    });
+    const cloudBanks = bitmap(width, 80, p => {
+        for (const [x, y, w] of [[9,61,42],[79,48,37],[160,58,59],[271,68,34],[338,51,47]]) {
+            rect(p, '#956784aa', x, y, w, 2);
+            rect(p, '#bd89a1aa', x + 4, y - 2, w - 9, 3);
+            rect(p, '#c99aab99', x + 10, y - 4, Math.floor(w * .46), 3);
+            rect(p, '#d4b0bc88', x + 14, y - 5, Math.floor(w * .24), 2);
         }
     });
 
@@ -150,6 +161,7 @@ function createRunnerArt(canvas, groundY) {
         });
     }
 
+    const dinoColors = { '#':'#233a44', h:'#c3f39a', w:'#fff3c7', l:'#8ed984', s:'#4c9e76' };
     const dinoSprite = sprite([
         '.............#######.', '............#hhhhhhh#', '............#hhw#llh#',
         '............#ll##lll#', '............#lllllll#', '............#lll#####',
@@ -158,7 +170,13 @@ function createRunnerArt(canvas, groundY) {
         '..shllllllhhlhl#.#...', '...slllllllslll#.....', '....sslllsslll#......',
         '.....#sssssll#.......', '......##sssll#.......', '......#ls#.#l#.......',
         '.....#ss#..#l#.......', '.....###...#lh#......', '...........####......'
-    ], { '#':'#233a44', h:'#c3f39a', w:'#fff3c7', l:'#8ed984', s:'#4c9e76' });
+    ], dinoColors);
+    const duckSprite = sprite([
+        '...................######.', '..................#hhhhhh#', '...............####hhw#ll#',
+        '..#hh##########hlllhllhhl#', '.sh###sllhhhhllllhlllllll#', '..shhlllllllhhlllhl#######',
+        '...ssllllhshlllllslhh#....', '.....#sllsslllllsl###.....', '.......###ssll#lslh#......',
+        '.........#ssll#####.......', '........#ss#l#............', '........###.###...........'
+    ], dinoColors);
 
     const cactus = sprite([
         '.....##....', '....#hl#...', '....#hl#...', '.#..#hl#...', '#hl.#hl#...',
@@ -167,26 +185,52 @@ function createRunnerArt(canvas, groundY) {
         '....#sl#...', '....####...'
     ], { '#':'#263e47', h:'#c0df8d', l:'#7dbd79', s:'#468b70' });
 
+    const birdColors = { '#':'#3c2c42', r:'#df7559', h:'#ffb17b', b:'#a44758', y:'#ffce88', w:'#fff2c8' };
+    const birdHeadAndBody = sprite([
+        '..........##', '.......###h#', '......#w#rr#',
+        '.....#rrrhr##', '..###hrrrhrh######', '##yyyrhhhhrrhhhhhr######...##',
+        '.####rrbbrhrrrrrrrrrrhhh####.', '......###rrrrrbrrbbbbrrr##', '.........##bbbbbbbb#####',
+        '...........######'
+    ], birdColors);
+    // The torso and eye hold steady while the swept wings beat above and below them.
+    const birdFrames = [true, false].map(wingsUp => bitmap(29, 17, p => {
+        const outline = wingsUp
+            ? [[12,10],[14,5],[18,1],[23,0],[20,3],[18,8],[21,10]]
+            : [[11,9],[20,9],[19,12],[22,16],[18,17],[14,14]];
+        const membrane = wingsUp
+            ? [[14,9],[15,5],[19,2],[21,1],[18,4],[17,9]]
+            : [[13,10],[18,10],[17,12],[20,15],[17,14]];
+        polygon(p, birdColors['#'], outline);
+        polygon(p, birdColors.r, membrane);
+        p.drawImage(birdHeadAndBody, 0, 3);
+    }));
+    const wingFrameSeconds = .16;
+
     function scroll(tile, distance, speed, y = 0) {
         const offset = Math.floor(distance * speed / 2) % tile.width;
         for (let x = -offset; x < width; x += tile.width) ctx.drawImage(tile, x, y);
     }
 
-    function drawCactus(x, y, w, h) {
-        ctx.drawImage(cactus, Math.round(x / 2), Math.round(y / 2), Math.round(w / 2), Math.round(h / 2));
+    function drawSprite(image, x, y, w, h) {
+        ctx.drawImage(image, Math.round(x / 2), Math.round(y / 2), Math.round(w / 2), Math.round(h / 2));
     }
 
-    return function drawScene({ distance, dino, obstacles, preview }) {
+    return function drawScene({ elapsed, distance, dino, obstacles, preview }) {
         ctx.drawImage(sky, 0, 0);
+        scroll(highClouds, distance, .035);
+        scroll(cloudBanks, distance, .065);
         scroll(farRidge, distance, 0.08);
         scroll(mesas, distance, 0.19);
         scroll(foothills, distance, 0.37);
         scroll(track, distance, 1, ground);
         if (preview) {
-            drawCactus(614, groundY - 64, 38, 64);
-            drawCactus(670, groundY - 40, 24, 40);
+            drawSprite(cactus, 614, groundY - 64, 38, 64);
+            drawSprite(cactus, 670, groundY - 40, 24, 40);
         }
-        for (const obstacle of obstacles) drawCactus(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        const bird = birdFrames[Math.floor(elapsed / wingFrameSeconds) % birdFrames.length];
+        for (const obstacle of obstacles) {
+            drawSprite(obstacle.kind === 'bird' ? bird : cactus, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+        }
 
         const x = Math.round((preview ? 405 : dino.x) / 2);
         const y = Math.round(dino.y / 2);
@@ -198,6 +242,6 @@ function createRunnerArt(canvas, groundY) {
             const kick = Math.floor(distance / 6) % 5;
             rect(ctx, '#cd927e', x - kick * 2, ground - 2 - Math.floor(kick / 2), 2, 1);
         }
-        ctx.drawImage(dinoSprite, x, y, w, h);
+        ctx.drawImage(dino.ducking ? duckSprite : dinoSprite, x, y, w, h);
     };
 }
