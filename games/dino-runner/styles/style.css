@@ -44,6 +44,8 @@ body {
 }
 .hud, .controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .hud { min-height: 66px; padding: 10px clamp(14px, 3vw, 32px); }
+.run-info { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; }
+#difficultyLevel { font: 600 13px/1.25 var(--mono); color: var(--lavender); }
 .status, .counters dt, .result dt {
     font: 600 11px/1.3 var(--mono);
     letter-spacing: .1em;
@@ -149,6 +151,7 @@ kbd {
     .runner-shell { margin-top: 26px; }
     .game-heading { gap: 10px 16px; margin-bottom: 16px; }
     .hud { min-height: 56px; }
+    .run-info { flex-direction: column; align-items: flex-start; }
     .counters div { flex-direction: column; gap: 3px; }
     .overlay { padding: 12px; }
     .overlay-card { width: 44%; min-width: 0; padding: 12px; }

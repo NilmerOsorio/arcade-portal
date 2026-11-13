@@ -19,7 +19,7 @@ To play locally, download and extract the project, then open the root `index.htm
 ## 👾 Included Games
 
 - **2048** — Slide matching tiles together to reach 2048.
-- **Dino Runner** — Hold Space, ↑, or the track for a high jump, or release early for a short hop. Hold ↓ or the **Hold to duck** button to crouch beneath birds. The desert accelerates over 80 seconds, introducing cactus pairs and birds at three heights. Each run starts at the original pace.
+- **Dino Runner** — Hold Space, ↑, or the track for a high jump, or release early for a short hop. Hold ↓ or **Hold to duck** to crouch beneath birds. The desert gradually speeds up over the first 80 seconds. Every 500 points adds a level with a faster pace, closer hazards, and new cactus and bird patterns.
 - **Flappy Bird** — Choose one of four pixel-art birds and fly through neon pipes. Tap, click, or press Space or ↑ to flap. Each pipe pair you clear earns one point.
 - **Memory Card** — Flip cards and remember where their partners are.
 - **Minesweeper** — Read the clues to uncover safe tiles and flag mines.

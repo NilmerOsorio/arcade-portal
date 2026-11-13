@@ -12,16 +12,15 @@ function initRunner() {
     const restartBtn = document.getElementById('restartBtn');
     const duckBtn = document.getElementById('duckBtn');
     const statusText = document.getElementById('statusText');
+    const difficultyEl = document.getElementById('difficultyLevel');
 
     const scoreKey = 'dinoRunnerHighScore';
     const jumpInputs = new Set();
     const duckInputs = new Set();
     let dino = RunnerPhysics.createDino(groundY);
     let course = RunnerCourse.createCourse(groundY, canvas.width);
+    let run = RunnerDifficulty.createRun();
     let running = false;
-    let elapsed = 0;
-    let distance = 0;
-    let score = 0;
     let highScore = readHighScore();
     let lastTime = 0;
 
@@ -39,15 +38,17 @@ function initRunner() {
     }
 
     function draw() {
-        drawScene({ elapsed, distance, dino, obstacles: course.obstacles, preview: !startScreen.hidden });
+        drawScene({ elapsed: run.elapsed, distance: run.distance, dino, obstacles: course.obstacles, preview: !startScreen.hidden });
+    }
+
+    function showLevel() {
+        difficultyEl.textContent = `Level ${run.level} · ${run.name}`;
     }
 
     function startRun() {
         if (running) return;
         running = true;
-        elapsed = 0;
-        distance = 0;
-        score = 0;
+        run = RunnerDifficulty.createRun();
         dino = RunnerPhysics.createDino(groundY);
         course = RunnerCourse.createCourse(groundY, canvas.width);
         duckBtn.disabled = false;
@@ -55,7 +56,8 @@ function initRunner() {
         startScreen.hidden = true;
         gameOverScreen.hidden = true;
         statusText.textContent = 'Running';
-        scoreEl.textContent = formatScore(score);
+        scoreEl.textContent = formatScore(run.score);
+        showLevel();
         canvas.focus({ preventScroll: true });
         lastTime = performance.now();
         draw();
@@ -69,8 +71,8 @@ function initRunner() {
         duckInputs.clear();
         duckBtn.disabled = true;
         highScore = Math.max(highScore, readHighScore());
-        if (score > highScore) {
-            highScore = score;
+        if (run.score > highScore) {
+            highScore = run.score;
             try {
                 localStorage.setItem(scoreKey, String(highScore));
             } catch {
@@ -78,23 +80,19 @@ function initRunner() {
             }
         }
         statusText.textContent = 'Game over';
-        finalScoreEl.textContent = formatScore(score);
+        finalScoreEl.textContent = formatScore(run.score);
         finalHighScoreEl.textContent = highScoreEl.textContent = formatScore(highScore);
         gameOverScreen.hidden = false;
         if (hadGameFocus) restartBtn.focus({ preventScroll: true });
     }
 
     function step(dt) {
-        elapsed += dt;
-        distance = RunnerCourse.distanceAt(elapsed);
-        const points = Math.floor(distance / 100);
-        if (points !== score) {
-            score = points;
-            scoreEl.textContent = formatScore(score);
-        }
+        const previousScore = run.score;
+        if (run.advance(dt)) showLevel();
+        if (run.score !== previousScore) scoreEl.textContent = formatScore(run.score);
 
         RunnerPhysics.step(dino, dt, groundY);
-        course.update(elapsed, distance);
+        course.update(run);
         for (const obstacle of course.obstacles) {
             if (RunnerPhysics.hitsObstacle(dino, obstacle)) {
                 endRun();
@@ -176,6 +174,7 @@ function initRunner() {
 
     statusText.textContent = 'Ready';
     highScoreEl.textContent = formatScore(highScore);
+    showLevel();
     draw();
 }
 

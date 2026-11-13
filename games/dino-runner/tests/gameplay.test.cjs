@@ -5,10 +5,10 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 // Load the same classic scripts as the offline game without a browser or a build step.
-const scripts = ['physics.js', 'course.js'].map(file =>
+const scripts = ['physics.js', 'difficulty.js', 'course.js'].map(file =>
     fs.readFileSync(path.join(__dirname, '../js', file), 'utf8'));
-const { RunnerPhysics: player, RunnerCourse: track } = vm.runInNewContext(
-    scripts.join('\n') + '\n;({ RunnerPhysics, RunnerCourse })');
+const { RunnerPhysics: player, RunnerCourse: track, RunnerDifficulty: difficulty } = vm.runInNewContext(
+    scripts.join('\n') + '\n;({ RunnerPhysics, RunnerCourse, RunnerDifficulty })');
 const ground = 288;
 const rates = [30, 60, 120, 144];
 
@@ -73,109 +73,233 @@ test('solid cactus and bird pixels collide, while transparent corners and duck c
     assert.ok(player.hitsObstacle(dino, cactus));
 });
 
-test('active time controls continuous speed, with an independent opening state on replay', () => {
-    let previous = track.speedAt(0);
-    assert.equal(previous, 360);
-    for (let s = 0; s <= 100; s += 0.25) {
-        const speed = track.speedAt(s);
-        const measured = (track.distanceAt(s + 0.001) - track.distanceAt(s)) / 0.001;
-        assert.ok(speed >= previous && speed <= 840 && speed - previous < 3);
-        assert.ok(Math.abs(measured - speed) < 0.01);
-        previous = speed;
+test('500-point boundaries advance exactly once and speed and distance stay continuous', () => {
+    const names = ['Easy', 'Normal', 'Moderate', 'Hard', 'Very Hard', 'Extreme'];
+    const thresholds = [500, 1000, 1500, 2000, 2500, 3000, 3500];
+    for (const [i, score] of thresholds.entries()) {
+        assert.equal(difficulty.levelForScore(score - 1), i + 1);
+        assert.equal(difficulty.levelForScore(score), i + 2);
+        assert.equal(difficulty.levelForScore(score + 1), i + 2);
     }
-    assert.equal(track.speedAt(80), 840);
-    const played = track.createCourse(ground, 800, seeded(42));
-    played.update(2, track.distanceAt(2));
-    assert.ok(played.obstacles.length);
-    const fresh = track.createCourse(ground, 800, seeded(42));
-    fresh.update(0, track.distanceAt(0));
-    assert.equal(fresh.obstacles.length, 0);
-    fresh.update(2, track.distanceAt(2));
-    assert.deepEqual(fresh.obstacles, played.obstacles);
+
+    const run = difficulty.createRun();
+    const course = track.createCourse(ground, 800, seeded(9));
+    assert.equal(run.name, names[0]);
+    const transitions = [];
+    let liveCrossings = 0;
+    let previousTargetSpeed = 0;
+    let nextWarmupSample = 20;
+    let warmupSpeed = run.speed;
+    const dt = 1 / 60;
+    while (run.score < 3550) {
+        const previous = { distance: run.distance, speed: run.speed, level: run.level };
+        const hazard = course.obstacles.find(o => o.x > 0 && o.x < 800);
+        const previousX = hazard?.x;
+        const changed = run.advance(dt);
+        course.update(run);
+        const moved = run.distance - previous.distance;
+        assert.ok(moved > 0 && moved <= difficulty.tuning.maxSpeed * dt + 1e-7);
+        assert.ok(run.speed >= previous.speed - 1e-8 && run.speed <= difficulty.tuning.maxSpeed);
+        assert.ok(run.speed - previous.speed < 1, 'Speed stepped on a milestone');
+        assert.equal(run.score, Math.floor(run.distance / 100));
+        assert.equal(changed, previous.level !== run.level);
+        if (run.elapsed >= nextWarmupSample && nextWarmupSample <= 80) {
+            assert.equal(run.level, 1);
+            assert.ok(run.speed > warmupSpeed, 'Elapsed time must still raise the opening pace');
+            warmupSpeed = run.speed;
+            nextWarmupSample += 20;
+        }
+        if (changed) {
+            assert.equal(run.level, previous.level + 1);
+            if (run.level <= names.length) assert.equal(run.name, names[run.level - 1]);
+            assert.ok(run.speed > previousTargetSpeed, 'Milestones stopped increasing speed');
+            previousTargetSpeed = run.speed;
+            transitions.push(run.score);
+        }
+        if (hazard) {
+            assert.ok(course.obstacles.includes(hazard));
+            assert.ok(Math.abs(previousX - hazard.x - moved) < 1e-7, 'Live hazard shifted on the track');
+            if (changed) liveCrossings++;
+        }
+    }
+    assert.deepEqual(transitions, thresholds);
+    assert.ok(liveCrossings > 0);
+    // Many more milestones can be reached without overshooting the global cap.
+    for (let second = 0; second < 7200; second++) {
+        run.advance(1);
+        assert.ok(run.speed <= difficulty.tuning.maxSpeed);
+    }
+    assert.ok(run.level > 100 && run.speed > previousTargetSpeed);
+    const fresh = difficulty.createRun();
+    assert.equal(fresh.distance, 0);
+    assert.equal(fresh.score, 0);
+    assert.equal(fresh.level, 1);
+    assert.equal(fresh.speed, difficulty.tuning.baseSpeed);
+    assert.equal(fresh.pressure, 0);
+    const replay = track.createCourse(ground, 800, seeded(9));
+    replay.update(fresh);
+    assert.equal(replay.obstacles.length, 0);
 });
 
-test('encounters leave both a takeoff window and time to recover at the speed cap', () => {
-    const { gravity, jumpSpeed, standWidth } = player.tuning;
-    const fullJump = 2 * jumpSpeed / gravity;
-    for (const random of [() => 0, () => 1 - Number.EPSILON, seeded(8), seeded(13)]) {
-        const course = track.createCourse(ground, 800, random);
-        let previousEnd = -Infinity;
-        for (let frame = 0; frame < 150 * 30; frame++) {
-            const t = frame / 30;
-            course.update(t, track.distanceAt(t));
-            // A pair is emitted together; each new encounter is still off the right edge.
-            const group = course.obstacles.filter(o => o.trackX > previousEnd);
-            if (!group.length) continue;
-            const first = group[0];
-            const last = group[group.length - 1];
-            const end = last.trackX + last.width;
-            const recovery = (first.trackX - previousEnd - standWidth) / track.speedAt(150);
-            assert.ok(recovery >= fullJump + 0.17, 'Insufficient recovery at maximum speed');
-            previousEnd = end;
-
-            if (first.kind === 'bird' && ground - first.y - first.height >= 46) continue;
-            const clearance = Math.max(...group.map(o => ground - o.y)) + 6;
-            const timeAbove = 2 * Math.sqrt(jumpSpeed ** 2 - 2 * gravity * clearance) / gravity;
-            const timeAcross = (end - first.trackX + standWidth) / track.speedAt(0);
-            assert.ok(timeAbove - timeAcross >= 0.08, 'Takeoff window too narrow at minimum speed');
+test('held and released jump arcs stay the same through milestone crossings', () => {
+    const hz = 120;
+    for (const held of [false, true]) {
+        const run = difficulty.createRun();
+        const input = dino => { if (!held) player.releaseJump(dino); };
+        const baseline = measureJump(hz, input);
+        for (let milestone = 500; milestone <= 3500; milestone += 500) {
+            while (run.score < milestone - 1) run.advance(1 / hz);
+            const before = run.level;
+            const sample = measureJump(hz, dino => {
+                run.advance(1 / hz);
+                input(dino);
+            });
+            assert.equal(run.level, before + 1, 'Expected to cross a milestone while airborne');
+            assert.equal(sample.highest, baseline.highest);
+            assert.equal(sample.time, baseline.time);
         }
     }
 });
 
-test('random courses can be played from rest through the cap with time to recover', () => {
-    const lanes = new Set();
-    const heights = new Set();
-    let pairs = 0;
-    let completed = 0;
+// Count adjacent plants cleared in one jump as one encounter. A mixed sequence
+// needs separate inputs, so each of its hazards must satisfy the recovery budget.
+function jumpGroup(obstacles) {
+    const first = obstacles[0];
+    const group = [first];
+    if (first.kind === 'cactus') {
+        for (const next of obstacles.slice(1)) {
+            const last = group.at(-1);
+            if (next.kind !== 'cactus' || next.trackX - last.trackX - last.width >= 24) break;
+            group.push(next);
+        }
+    }
+    return group;
+}
+
+function sampleCourse(run, count, random) {
+    // Use the measured level and speed on a fresh stretch of track.
+    const state = { ...run, distance: 0 };
+    const course = track.createCourse(ground, 800, random);
+    const groups = [];
+    let end = -Infinity;
+    while (groups.length < count) {
+        course.update(state);
+        let newObstacles = course.obstacles.filter(o => o.trackX > end);
+        while (newObstacles.length) {
+            const group = jumpGroup(newObstacles);
+            groups.push(group);
+            const last = group.at(-1);
+            end = last.trackX + last.width;
+            newObstacles = newObstacles.slice(group.length);
+        }
+        state.distance += 64;
+        state.elapsed += 64 / state.speed;
+    }
+    return groups;
+}
+
+test('later levels shorten average distance and time and produce harder hazards within safe bounds', () => {
+    const { gravity, jumpSpeed, standWidth } = player.tuning;
+    const { baseSpeed, maxSpeed, minSpacing, maxEncountersPerSecond } = difficulty.tuning;
+    const run = difficulty.createRun();
+    const tiers = [];
+    for (const level of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        // Allow the warmup and each milestone transition to complete before sampling.
+        while (run.elapsed < 80 || run.score < (level - 1) * 500 + 100) run.advance(1 / 30);
+        assert.equal(run.level, level);
+        const groups = sampleCourse(run, 1000, seeded(13));
+        const first = groups[0][0];
+        const last = groups.at(-1)[0];
+        const meanDistance = (last.trackX - first.trackX) / (groups.length - 1);
+        const birdLanes = groups.filter(g => g[0].kind === 'bird').map(g => ground - g[0].y - g[0].height);
+        assert.deepEqual([...new Set(birdLanes)].sort((a, b) => a - b),
+            level === 1 ? [8, 46, 86] : level < 5 ? [8, 38, 46, 86] : [8, 22, 38, 46, 86]);
+        assert.equal(Math.max(...groups.map(g => g.length)), level < 4 ? 2 : 3);
+        tiers.push({ meanDistance, interval: meanDistance / run.speed, birdCount: birdLanes.length,
+            lanes: new Set(birdLanes), maxPlants: Math.max(...groups.map(g => g.length)) });
+
+        let previousStart = -Infinity;
+        let previousEnd = -Infinity;
+        for (const group of groups) {
+            const hazard = group[0];
+            const end = group.at(-1).trackX + group.at(-1).width;
+            assert.ok(hazard.trackX - previousEnd >= minSpacing - 1e-7, 'Gap fell below the configured floor');
+            assert.ok((hazard.trackX - previousStart) / maxSpeed >= 1 / maxEncountersPerSecond - 1e-8);
+            assert.ok((hazard.trackX - previousEnd - standWidth) / maxSpeed >= 2 * jumpSpeed / gravity + 0.17);
+            previousEnd = end;
+            previousStart = hazard.trackX;
+            if (hazard.kind === 'bird' && ground - hazard.y - hazard.height >= player.tuning.duckHeight) continue;
+            const clearance = Math.max(...group.map(o => ground - o.y)) + 6;
+            const timeAbove = 2 * Math.sqrt(jumpSpeed ** 2 - 2 * gravity * clearance) / gravity;
+            const timeAcross = (end - hazard.trackX + standWidth) / baseSpeed;
+            assert.ok(timeAbove - timeAcross >= 0.08, 'Takeoff window too narrow at minimum speed');
+        }
+
+        if (level === 3 || level === 6) {
+            // Always selecting the mixed-pattern branch forces its full queued sequence.
+            const forced = sampleCourse(run, 6, () => 0);
+            const actions = forced.map(g => g[0].kind === 'bird' ? 'duck' : 'jump');
+            const cycle = level === 3 ? ['jump', 'duck'] : ['duck', 'jump', 'duck'];
+            assert.deepEqual(Array.from(actions), Array.from({ length: 6 }, (_, i) => cycle[i % cycle.length]));
+        }
+    }
+    for (let i = 1; i < tiers.length; i++) {
+        assert.ok(tiers[i].meanDistance < tiers[i - 1].meanDistance);
+        assert.ok(tiers[i].interval < tiers[i - 1].interval);
+    }
+    assert.ok(tiers.at(-1).birdCount > tiers[0].birdCount);
+    assert.ok(tiers.at(-1).lanes.size > tiers[0].lanes.size);
+    assert.equal(tiers[0].maxPlants, 2);
+    assert.equal(tiers.at(-1).maxPlants, 3);
+});
+
+test('randomized courses stay playable through Level 8 at different display rates', () => {
+    let jumps = 0;
+    let ducks = 0;
+    let triples = 0;
     for (const hz of rates) {
-        for (const random of [() => 0, () => 1 - Number.EPSILON, ...[1, 3, 17, 29].map(seeded)]) {
+        for (const random of [() => 0, () => 1 - Number.EPSILON, seeded(3), seeded(29)]) {
+            const run = difficulty.createRun();
             const course = track.createCourse(ground, 800, random);
             const dino = player.createDino(ground);
-            let lastTrackX = -Infinity;
-            for (let frame = 1; frame <= hz * 110; frame++) {
-                const now = (frame - 1) / hz;
-                const upcoming = course.obstacles.filter(o => o.x + o.width > dino.x);
-                const [first, second] = upcoming;
-                if (first) {
-                    // Treat nearby plants as one jump. Aim to pass their midpoint at the apex.
-                    const pair = second && first.kind === 'cactus' && second.kind === 'cactus'
-                        && second.x - (first.x + first.width) < 24;
-                    const last = pair ? second : first;
+            let cleared = -Infinity;
+            while (run.score < 3600) {
+                const ahead = course.obstacles.filter(o => o.x + o.width > dino.x);
+                if (ahead.length) {
+                    const group = jumpGroup(ahead);
+                    const first = group[0];
+                    const last = group.at(-1);
                     const clearance = ground - first.y - first.height;
-                    const shouldDuck = first.kind === 'bird' && clearance === 46;
-                    player.setDuck(dino, shouldDuck);
-                    if (first.trackX > lastTrackX) {
+                    const passBelow = first.kind === 'bird' && clearance >= player.tuning.duckHeight;
+                    player.setDuck(dino, passBelow && clearance < player.tuning.standHeight);
+                    if (first.trackX > cleared) {
                         const center = (first.x + last.x + last.width) / 2;
-                        const secondsToCenter = (center - dino.x - dino.width / 2) / track.speedAt(now);
-                        const walkUnder = first.kind === 'bird' && clearance >= 46;
-                        if (walkUnder || secondsToCenter <= 0.325) {
-                            if (!walkUnder) {
-                                assert.ok(player.jump(dino), 'No time to recover from the previous encounter');
-                            }
-                            lastTrackX = last.trackX;
-                            if (first.kind === 'bird') lanes.add(clearance);
-                            else heights.add(first.height);
-                            if (pair) pairs++;
-                            completed++;
+                        const timeToCenter = (center - dino.x - dino.width / 2) / run.speed;
+                        if (passBelow || timeToCenter <= 0.325) {
+                            if (!passBelow) {
+                                assert.ok(player.jump(dino), 'No time to land before the next jump');
+                                jumps++;
+                            } else if (dino.ducking) ducks++;
+                            if (group.length === 3) triples++;
+                            cleared = last.trackX;
                         }
                     }
                 } else {
                     player.setDuck(dino, false);
                 }
-
-                // Read controls at display rate, check collisions at the game's physics cadence.
                 const steps = Math.ceil(120 / hz);
-                for (let i = 1; i <= steps; i++) {
-                    const t = now + i / (steps * hz);
-                    player.step(dino, 1 / (steps * hz), ground);
-                    course.update(t, track.distanceAt(t));
+                const dt = 1 / (steps * hz);
+                for (let i = 0; i < steps; i++) {
+                    run.advance(dt);
+                    player.step(dino, dt, ground);
+                    course.update(run);
                     for (const o of course.obstacles) {
-                        assert.equal(player.hitsObstacle(dino, o), false, `Hit ${o.kind} at ${t}s, ${hz} Hz`);
+                        assert.equal(player.hitsObstacle(dino, o), false, `Hit ${o.kind} at score ${run.score}, ${hz} Hz`);
                     }
                 }
             }
+            assert.equal(run.level, 8);
         }
     }
-    assert.deepEqual([...lanes].sort((a, b) => a - b), [8, 46, 86]);
-    assert.ok(heights.size > 20 && pairs > 100 && completed > 1000);
+    assert.ok(jumps > 1000 && ducks > 100 && triples > 0);
 });

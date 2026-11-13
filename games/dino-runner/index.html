@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="styles/style.css">
     <script defer src="js/art.js"></script>
     <script defer src="js/physics.js"></script>
+    <script defer src="js/difficulty.js"></script>
     <script defer src="js/course.js"></script>
     <script defer src="js/main.js"></script>
 </head>
@@ -37,7 +38,10 @@
 
         <section class="cabinet" aria-label="Dino Runner game">
             <div class="hud">
-                <div class="status"><i aria-hidden="true"></i><span id="statusText" role="status">Ready</span></div>
+                <div class="run-info">
+                    <div class="status"><i aria-hidden="true"></i><span id="statusText" role="status">Ready</span></div>
+                    <span id="difficultyLevel" role="status" aria-atomic="true"></span>
+                </div>
                 <dl class="counters">
                     <div><dt>Score</dt><dd id="score">00000</dd></div>
                     <div><dt>Best</dt><dd id="highScore">00000</dd></div>
