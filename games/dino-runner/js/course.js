@@ -66,7 +66,7 @@ const RunnerCourse = (() => {
             if (!mustDuck && run.elapsed >= unlock.duckBird) lanes.push(46);
             if (!mustDuck && run.elapsed >= unlock.highBird) lanes.push(86);
             if (run.level >= 2) lanes.push(38);
-            if (!mustDuck && run.level >= 5) lanes.push(22);
+            if (!mustDuck && run.level >= 5) lanes.push(16);
             place('bird', trackX, birdHeight, birdWidth, lanes[Math.floor(random() * lanes.length)]);
             return birdWidth;
         }

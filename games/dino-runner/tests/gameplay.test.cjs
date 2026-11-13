@@ -73,6 +73,23 @@ test('solid cactus and bird pixels collide, while transparent corners and duck c
     assert.ok(player.hitsObstacle(dino, cactus));
 });
 
+test('low birds require a jump, head-height birds allow ducking and high birds clear the runner', () => {
+    function collidesOnPass(bottomClearance, ducking) {
+        const dino = player.createDino(ground);
+        player.setDuck(dino, ducking);
+        const bird = { kind: 'bird', width: 58, height: 34, y: ground - bottomClearance - 34 };
+        for (let x = dino.x + dino.width; x >= dino.x - bird.width; x--) {
+            bird.x = x;
+            if (player.hitsObstacle(dino, bird)) return true;
+        }
+        return false;
+    }
+    for (const lane of [8, 16, 38, 46, 86]) {
+        assert.equal(collidesOnPass(lane, false), lane !== 86, `Standing, lane ${lane}`);
+        assert.equal(collidesOnPass(lane, true), lane <= 16, `Ducking, lane ${lane}`);
+    }
+});
+
 test('500-point boundaries advance exactly once and speed and distance stay continuous', () => {
     const names = ['Easy', 'Normal', 'Moderate', 'Hard', 'Very Hard', 'Extreme'];
     const thresholds = [500, 1000, 1500, 2000, 2500, 3000, 3500];
@@ -213,7 +230,7 @@ test('later levels shorten average distance and time and produce harder hazards 
         const meanDistance = (last.trackX - first.trackX) / (groups.length - 1);
         const birdLanes = groups.filter(g => g[0].kind === 'bird').map(g => ground - g[0].y - g[0].height);
         assert.deepEqual([...new Set(birdLanes)].sort((a, b) => a - b),
-            level === 1 ? [8, 46, 86] : level < 5 ? [8, 38, 46, 86] : [8, 22, 38, 46, 86]);
+            level === 1 ? [8, 46, 86] : level < 5 ? [8, 38, 46, 86] : [8, 16, 38, 46, 86]);
         assert.equal(Math.max(...groups.map(g => g.length)), level < 4 ? 2 : 3);
         tiers.push({ meanDistance, interval: meanDistance / run.speed, birdCount: birdLanes.length,
             lanes: new Set(birdLanes), maxPlants: Math.max(...groups.map(g => g.length)) });
