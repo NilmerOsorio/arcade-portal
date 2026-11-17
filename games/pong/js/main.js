@@ -1,5 +1,5 @@
 /* ==========================================================================
-   NEON PONG — Project 11
+   PIXEL PONG — Arcade Portal
    Vanilla JavaScript game engine: fixed-step loop, vector ball physics,
    dual-paddle input, three AI tiers, score state machine, canvas renderer.
    ========================================================================== */
@@ -10,7 +10,8 @@
        1. Constants & configuration
        ---------------------------------------------------------------------- */
     const WORLD = Object.freeze({ width: 1000, height: 600 });
-    const TAU = Math.PI * 2;
+    // Rendering uses two world units per pixel; physics stays subpixel accurate.
+    const PIXEL_SCALE = 2;
 
     const CONFIG = Object.freeze({
         paddle: Object.freeze({
@@ -125,6 +126,7 @@
 
     const keys = new Set();
     const touchHeld = new Set();
+    const touchPointers = new Map();
     const touchDrag = {
         left: { id: null, targetY: WORLD.height / 2 },
         right: { id: null, targetY: WORLD.height / 2 }
@@ -143,6 +145,7 @@
     const ctx = canvas ? canvas.getContext("2d") : null;
 
     const els = {
+        app: byId("gameApp"),
         leftScore: byId("leftScore"),
         rightScore: byId("rightScore"),
         leftScorePanel: byId("leftScorePanel"),
@@ -274,6 +277,7 @@
     function clearInput() {
         keys.clear();
         touchHeld.clear();
+        touchPointers.clear();
         touchDrag.left.id = null;
         touchDrag.right.id = null;
         touchDrag.left.targetY = WORLD.height / 2;
@@ -321,6 +325,9 @@
         overlay.classList.remove("is-open");
         overlay.setAttribute("aria-hidden", "true");
         overlay.setAttribute("inert", "");
+        if (!Object.values(overlayElements).some((item) => item.classList.contains("is-open"))) {
+            els.app?.removeAttribute("inert");
+        }
     }
 
     function showOverlay(overlay, focusTarget) {
@@ -333,6 +340,7 @@
         overlay.classList.add("is-open");
         overlay.removeAttribute("inert");
         overlay.setAttribute("aria-hidden", "false");
+        els.app?.setAttribute("inert", "");
 
         if (focusTarget) {
             window.requestAnimationFrame(() => {
@@ -745,6 +753,12 @@
     const moveKeys = new Set([KEYS.p1Up, KEYS.p1Down, KEYS.p2Up, KEYS.p2Down]);
 
     function handleKeyDown(event) {
+        // Space belongs to focused buttons and links, including modal actions.
+        if (event.code === "Space" && event.target?.closest?.(
+            'button, a[href], input, select, textarea, [contenteditable="true"]'
+        )) {
+            return;
+        }
         const isPauseKey = event.code === "Space" || event.code === "KeyP";
         const isEscape = event.code === "Escape";
 
@@ -851,15 +865,17 @@
         });
     }
 
-    function releaseTouchButton(button) {
-        const side = button.dataset.paddle;
-        const direction = button.dataset.direction;
-        if (!side || !direction) {
+    function releaseTouchPointer(event) {
+        const held = touchPointers.get(event.pointerId);
+        if (!held) {
             return;
         }
-
-        touchHeld.delete(`${side}-${direction}`);
-        button.classList.remove("is-pressed");
+        touchPointers.delete(event.pointerId);
+        // A second finger can still be holding this same direction.
+        if (![...touchPointers.values()].some((entry) => entry.key === held.key)) {
+            touchHeld.delete(held.key);
+            held.button.classList.remove("is-pressed");
+        }
     }
 
     function bindTouchButtons() {
@@ -876,7 +892,9 @@
                 }
 
                 event.preventDefault();
-                touchHeld.add(`${side}-${direction}`);
+                const key = `${side}-${direction}`;
+                touchPointers.set(event.pointerId, { button, key });
+                touchHeld.add(key);
                 button.classList.add("is-pressed");
 
                 if (button.setPointerCapture && event.pointerId !== undefined) {
@@ -888,11 +906,14 @@
                 }
             });
 
-            button.addEventListener("pointerup", () => releaseTouchButton(button));
-            button.addEventListener("pointercancel", () => releaseTouchButton(button));
-            button.addEventListener("lostpointercapture", () => releaseTouchButton(button));
+            button.addEventListener("pointerup", releaseTouchPointer);
+            button.addEventListener("pointercancel", releaseTouchPointer);
+            button.addEventListener("lostpointercapture", releaseTouchPointer);
             button.addEventListener("contextmenu", (event) => event.preventDefault());
         });
+        // Also release outside a button if pointer capture is unavailable.
+        window.addEventListener("pointerup", releaseTouchPointer);
+        window.addEventListener("pointercancel", releaseTouchPointer);
     }
 
     document.addEventListener("keydown", handleKeyDown);
@@ -1165,318 +1186,185 @@
         if (!canvas) {
             return;
         }
-
-        const rect = canvas.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const width = Math.max(1, Math.round(rect.width * dpr));
-        const height = Math.max(1, Math.round(rect.height * dpr));
-
+        // A stable framebuffer keeps the same pixel size at every device DPR.
+        // CSS scales this surface; touch coordinates still map into WORLD.
+        const width = WORLD.width / PIXEL_SCALE;
+        const height = WORLD.height / PIXEL_SCALE;
         if (canvas.width !== width || canvas.height !== height) {
             canvas.width = width;
             canvas.height = height;
         }
+        ctx.imageSmoothingEnabled = false;
     }
 
-    function traceRoundedRect(context, x, y, width, height, radius) {
-        const r = Math.min(radius, width / 2, height / 2);
-        context.beginPath();
-        context.moveTo(x + r, y);
-        context.arcTo(x + width, y, x + width, y + height, r);
-        context.arcTo(x + width, y + height, x, y + height, r);
-        context.arcTo(x, y + height, x, y, r);
-        context.arcTo(x, y, x + width, y, r);
-        context.closePath();
+    // Small original bitmap alphabet: scores and serve cues work offline.
+    const PIXEL_GLYPHS = Object.freeze({
+        "0": ["111", "101", "101", "101", "111"],
+        "1": ["010", "110", "010", "010", "111"],
+        "2": ["111", "001", "111", "100", "111"],
+        "3": ["111", "001", "111", "001", "111"],
+        "4": ["101", "101", "111", "001", "001"],
+        "5": ["111", "100", "111", "001", "111"],
+        "6": ["111", "100", "111", "101", "111"],
+        "7": ["111", "001", "010", "010", "010"],
+        "8": ["111", "101", "111", "101", "111"],
+        "9": ["111", "101", "111", "001", "111"],
+        "A": ["010", "101", "111", "101", "101"],
+        "D": ["110", "101", "101", "101", "110"],
+        "E": ["111", "100", "110", "100", "111"],
+        "G": ["111", "100", "101", "101", "111"],
+        "R": ["110", "101", "110", "101", "101"],
+        "S": ["111", "100", "111", "001", "111"],
+        "T": ["111", "010", "010", "010", "010"],
+        "V": ["101", "101", "101", "101", "010"],
+        "Y": ["101", "101", "010", "010", "010"]
+    });
+
+    function drawPixelText(text, centerX, y, size, color) {
+        const width = (text.length * 4 - 1) * size;
+        const startX = Math.round(centerX - width / 2);
+        ctx.fillStyle = color;
+        [...text].forEach((letter, index) => {
+            const glyph = PIXEL_GLYPHS[letter];
+            if (!glyph) {
+                return;
+            }
+            glyph.forEach((row, rowIndex) => {
+                [...row].forEach((pixel, columnIndex) => {
+                    if (pixel === "1") {
+                        ctx.fillRect(
+                            startX + (index * 4 + columnIndex) * size,
+                            y + rowIndex * size,
+                            size,
+                            size
+                        );
+                    }
+                });
+            });
+        });
     }
 
     function drawCornerBracket(x, y, xDir, yDir, color) {
-        const length = 20;
-        ctx.save();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.5;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = 9;
-        ctx.beginPath();
-        ctx.moveTo(x + xDir * length, y);
-        ctx.lineTo(x, y);
-        ctx.lineTo(x, y + yDir * length);
-        ctx.stroke();
-        ctx.restore();
+        ctx.fillStyle = color;
+        ctx.fillRect(xDir > 0 ? x : x - 12, y, 14, 2);
+        ctx.fillRect(x, yDir > 0 ? y : y - 12, 2, 14);
     }
 
     function drawArena() {
-        const width = WORLD.width;
-        const height = WORLD.height;
-
-        const background = ctx.createLinearGradient(0, 0, 0, height);
-        background.addColorStop(0, "#060b1b");
-        background.addColorStop(0.5, "#040815");
-        background.addColorStop(1, "#04060f");
-        ctx.fillStyle = background;
+        const width = canvas.width;
+        const height = canvas.height;
+        ctx.fillStyle = "#101222";
         ctx.fillRect(0, 0, width, height);
+        ctx.fillStyle = "#14182b";
+        ctx.fillRect(0, 0, width / 2, height);
 
-        const centerGlow = ctx.createRadialGradient(
-            width / 2,
-            height / 2,
-            40,
-            width / 2,
-            height / 2,
-            width * 0.62
-        );
-        centerGlow.addColorStop(0, "rgba(25, 82, 132, 0.16)");
-        centerGlow.addColorStop(0.55, "rgba(12, 26, 58, 0.045)");
-        centerGlow.addColorStop(1, "rgba(3, 5, 14, 0)");
-        ctx.fillStyle = centerGlow;
-        ctx.fillRect(0, 0, width, height);
-
-        const leftGlow = ctx.createLinearGradient(0, 0, 150, 0);
-        leftGlow.addColorStop(0, "rgba(34, 230, 255, 0.075)");
-        leftGlow.addColorStop(1, "rgba(34, 230, 255, 0)");
-        ctx.fillStyle = leftGlow;
-        ctx.fillRect(0, 0, 150, height);
-
-        const rightGlow = ctx.createLinearGradient(width, 0, width - 150, 0);
-        rightGlow.addColorStop(0, "rgba(255, 63, 164, 0.07)");
-        rightGlow.addColorStop(1, "rgba(255, 63, 164, 0)");
-        ctx.fillStyle = rightGlow;
-        ctx.fillRect(width - 150, 0, 150, height);
-
-        // Arena grid.
-        ctx.save();
-        ctx.strokeStyle = "rgba(118, 158, 255, 0.045)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let x = 50; x < width; x += 50) {
-            ctx.moveTo(x + 0.5, 0);
-            ctx.lineTo(x + 0.5, height);
+        // Quiet pixel grid with dithered edges, keeping the ball easy to read.
+        ctx.fillStyle = "#202338";
+        for (let x = 25; x < width; x += 25) {
+            for (let y = 25; y < height; y += 25) {
+                ctx.fillRect(x, y, 1, 1);
+            }
         }
-        for (let y = 50; y < height; y += 50) {
-            ctx.moveTo(0, y + 0.5);
-            ctx.lineTo(width, y + 0.5);
+        for (let y = 4; y < height - 4; y += 8) {
+            ctx.fillStyle = "#21364b";
+            ctx.fillRect(3, y, 2, 2);
+            ctx.fillStyle = "#402338";
+            ctx.fillRect(width - 5, y, 2, 2);
         }
-        ctx.stroke();
 
-        ctx.strokeStyle = "rgba(118, 158, 255, 0.06)";
-        ctx.beginPath();
-        for (let x = 100; x < width; x += 100) {
-            ctx.moveTo(x + 0.5, 0);
-            ctx.lineTo(x + 0.5, height);
+        ctx.fillStyle = "#453853";
+        ctx.fillRect(12, 0, width - 24, 2);
+        ctx.fillRect(12, height - 2, width - 24, 2);
+        ctx.fillStyle = "#534866";
+        for (let y = 8; y < height; y += 14) {
+            ctx.fillRect(width / 2 - 1, y, 2, 6);
         }
-        for (let y = 100; y < height; y += 100) {
-            ctx.moveTo(0, y + 0.5);
-            ctx.lineTo(width, y + 0.5);
-        }
-        ctx.stroke();
-        ctx.restore();
 
-        // Centre divider and circle.
-        ctx.save();
-        ctx.setLineDash([7, 16]);
-        ctx.strokeStyle = "rgba(180, 208, 255, 0.14)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(width / 2, 18);
-        ctx.lineTo(width / 2, height - 18);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.strokeStyle = "rgba(160, 196, 255, 0.1)";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(width / 2, height / 2, 68, 0, TAU);
-        ctx.stroke();
-        ctx.restore();
-
-        // Faint oversized scoreboard numerals behind the playfield.
-        ctx.save();
-        ctx.font = '900 220px Orbitron, "Segoe UI", sans-serif';
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "rgba(34, 230, 255, 0.035)";
-        ctx.fillText(String(state.scores.left), width * 0.235, height / 2 + 14);
-        ctx.fillStyle = "rgba(255, 63, 164, 0.035)";
-        ctx.fillText(String(state.scores.right), width * 0.765, height / 2 + 14);
-        ctx.restore();
-
-        drawCornerBracket(22, 22, 1, 1, "rgba(34, 230, 255, 0.5)");
-        drawCornerBracket(width - 22, 22, -1, 1, "rgba(255, 63, 164, 0.48)");
-        drawCornerBracket(22, height - 22, 1, -1, "rgba(34, 230, 255, 0.26)");
-        drawCornerBracket(width - 22, height - 22, -1, -1, "rgba(255, 63, 164, 0.26)");
+        drawPixelText(String(state.scores.left).padStart(2, "0"), width / 4, 28, 5, "#29485f");
+        drawPixelText(String(state.scores.right).padStart(2, "0"), width * 3 / 4, 28, 5, "#573047");
+        drawCornerBracket(10, 10, 1, 1, "#38bdf8");
+        drawCornerBracket(width - 12, 10, -1, 1, "#f43f5e");
+        drawCornerBracket(10, height - 12, 1, -1, "#29485f");
+        drawCornerBracket(width - 12, height - 12, -1, -1, "#573047");
     }
 
     function drawTrail() {
-        if (ball.trail.length < 2) {
-            return;
-        }
-
-        const rgb = ball.vx >= 0 ? "255, 63, 164" : "34, 230, 255";
-
-        for (let index = 0; index < ball.trail.length; index += 1) {
+        const color = ball.vx >= 0 ? "#f43f5e" : "#38bdf8";
+        ctx.save();
+        ctx.fillStyle = color;
+        // Skip samples to leave a deliberate stepped, blocky tail.
+        for (let index = 0; index < ball.trail.length; index += 3) {
             const point = ball.trail[index];
             const progress = (index + 1) / ball.trail.length;
-            const alpha = progress * progress * 0.3;
-            const radius = ball.radius * (0.25 + progress * 0.72);
-
-            ctx.beginPath();
-            ctx.arc(point.x, point.y, radius, 0, TAU);
-            ctx.fillStyle = `rgba(${rgb}, ${alpha.toFixed(3)})`;
-            ctx.fill();
+            const size = 2 + Math.floor(progress * 5);
+            ctx.globalAlpha = progress * 0.3;
+            ctx.fillRect(
+                Math.round(point.x / PIXEL_SCALE - size / 2),
+                Math.round(point.y / PIXEL_SCALE - size / 2),
+                size,
+                size
+            );
         }
+        ctx.restore();
     }
 
     function drawPaddle(paddle, colors) {
-        const flash = clamp(paddle.flash / 0.17, 0, 1);
-
-        ctx.save();
-        ctx.shadowColor = colors.glow;
-        ctx.shadowBlur = 16 + flash * 26;
-
-        const gradient = ctx.createLinearGradient(
-            paddle.x,
-            paddle.y,
-            paddle.x + paddle.width,
-            paddle.y + paddle.height
-        );
-        gradient.addColorStop(0, colors.light);
-        gradient.addColorStop(0.45, colors.main);
-        gradient.addColorStop(1, colors.main);
-
-        ctx.fillStyle = gradient;
-        traceRoundedRect(
-            ctx,
-            paddle.x,
-            paddle.y,
-            paddle.width,
-            paddle.height,
-            paddle.width / 2
-        );
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.5 + flash * 0.4})`;
-        traceRoundedRect(
-            ctx,
-            paddle.x + paddle.width * 0.34,
-            paddle.y + 9,
-            2.6,
-            paddle.height - 18,
-            1.3
-        );
-        ctx.fill();
-
-        if (flash > 0) {
-            ctx.globalAlpha = flash * 0.45;
-            ctx.fillStyle = "#ffffff";
-            traceRoundedRect(
-                ctx,
-                paddle.x,
-                paddle.y,
-                paddle.width,
-                paddle.height,
-                paddle.width / 2
-            );
-            ctx.fill();
+        const x = Math.round(paddle.x / PIXEL_SCALE);
+        const y = Math.round(paddle.y / PIXEL_SCALE);
+        const width = Math.round(paddle.width / PIXEL_SCALE);
+        const height = Math.round(paddle.height / PIXEL_SCALE);
+        ctx.fillStyle = colors.dark;
+        ctx.fillRect(x - 1, y - 1, width + 2, height + 2);
+        ctx.fillStyle = paddle.flash > 0 ? "#f3f1ff" : colors.main;
+        ctx.fillRect(x, y, width, height);
+        ctx.fillStyle = colors.light;
+        ctx.fillRect(x, y, 2, height);
+        ctx.fillRect(x + 2, y, width - 2, 2);
+        ctx.fillStyle = colors.dark;
+        for (let offset = 9; offset < height - 2; offset += 10) {
+            ctx.fillRect(x + 2, y + offset, width - 2, 1);
         }
-
-        ctx.restore();
     }
 
-    function drawBall(time) {
-        const movingRight = ball.vx >= 0;
-        const rgb = movingRight ? "255, 63, 164" : "34, 230, 255";
-        const serving = state.phase === "playing" && state.serveTimer > 0;
-        const pulse = serving ? (Math.sin(time * 8) + 1) / 2 : 0;
-
-        ctx.save();
-        ctx.shadowColor = `rgba(${rgb}, 0.95)`;
-        ctx.shadowBlur = 24 + pulse * 14;
-
-        const gradient = ctx.createRadialGradient(
-            ball.x - 3,
-            ball.y - 3,
-            1,
-            ball.x,
-            ball.y,
-            ball.radius + 1
-        );
-        gradient.addColorStop(0, "#ffffff");
-        gradient.addColorStop(0.55, "#eefeff");
-        gradient.addColorStop(1, `rgb(${rgb})`);
-
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius, 0, TAU);
-        ctx.fill();
-
-        ctx.shadowBlur = 0;
-        ctx.strokeStyle = `rgba(${rgb}, ${0.3 + pulse * 0.28})`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, ball.radius + 4 + pulse * 2, 0, TAU);
-        ctx.stroke();
-        ctx.restore();
+    function drawBall() {
+        const x = Math.round((ball.x - ball.radius) / PIXEL_SCALE);
+        const y = Math.round((ball.y - ball.radius) / PIXEL_SCALE);
+        const size = Math.round(ball.radius * 2 / PIXEL_SCALE);
+        // Clipped corners keep the sprite close to its circular collision area.
+        ctx.fillStyle = ball.vx >= 0 ? "#f43f5e" : "#38bdf8";
+        ctx.fillRect(x + 2, y, size - 4, size);
+        ctx.fillRect(x, y + 2, size, size - 4);
+        ctx.fillStyle = "#f3f1ff";
+        ctx.fillRect(x + 2, y + 1, size - 4, size - 3);
+        ctx.fillRect(x + 1, y + 2, size - 3, size - 5);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(x + 2, y + 2, 3, 3);
     }
 
-    function drawServeIndicator(time) {
+    function drawServeIndicator() {
         if (state.phase !== "playing" || state.serveTimer <= 0) {
             return;
         }
-
-        const pulse = (Math.sin(time * 7) + 1) / 2;
-
-        ctx.save();
-        ctx.strokeStyle = `rgba(170, 232, 255, ${0.1 + pulse * 0.16})`;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 7]);
-        ctx.beginPath();
-        ctx.arc(ball.x, ball.y, 30 + pulse * 4, 0, TAU);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        ctx.fillStyle = "rgba(226, 245, 255, 0.5)";
-        ctx.font = '600 12px Orbitron, "Segoe UI", sans-serif';
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(
-            state.serveTimer > 0.35 ? "GET READY" : "SERVE",
-            ball.x,
-            ball.y - 54
-        );
-        ctx.restore();
+        const x = Math.round(ball.x / PIXEL_SCALE);
+        const y = Math.round(ball.y / PIXEL_SCALE);
+        drawCornerBracket(x - 15, y - 15, 1, 1, "#8b5cf6");
+        drawCornerBracket(x + 13, y + 13, -1, -1, "#8b5cf6");
+        drawPixelText(state.serveTimer > 0.35 ? "GET READY" : "SERVE", x, y - 34, 2, "#bfadff");
     }
 
-    function render(time) {
+    function render() {
         if (!ctx) {
             return;
         }
-
-        const pixelWidth = canvas.width;
-        const pixelHeight = canvas.height;
         ctx.save();
-        ctx.setTransform(
-            pixelWidth / WORLD.width,
-            0,
-            0,
-            pixelHeight / WORLD.height,
-            0,
-            0
-        );
-        ctx.clearRect(0, 0, WORLD.width, WORLD.height);
-
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.imageSmoothingEnabled = false;
         drawArena();
         drawTrail();
-        drawPaddle(leftPaddle, {
-            main: "#22e6ff",
-            light: "#d5fbff",
-            glow: "rgba(34, 230, 255, 0.85)"
-        });
-        drawPaddle(rightPaddle, {
-            main: "#ff3fa4",
-            light: "#ffd4ea",
-            glow: "rgba(255, 63, 164, 0.85)"
-        });
-        drawBall(time);
-        drawServeIndicator(time);
-
+        drawPaddle(leftPaddle, { main: "#38bdf8", light: "#b9edff", dark: "#24445e" });
+        drawPaddle(rightPaddle, { main: "#f43f5e", light: "#ffbdce", dark: "#5b2943" });
+        drawBall();
+        drawServeIndicator();
         ctx.restore();
     }
 
@@ -1521,7 +1409,7 @@
             state.accumulator = 0;
         }
 
-        render(now / 1000);
+        render();
         window.requestAnimationFrame(frame);
     }
 
@@ -1587,7 +1475,8 @@
         clearInput();
         setTouchControlsVisible(false);
         setTouchControlsMode();
-        render(0);
+        showOverlay(els.menuOverlay, els.startButton);
+        render();
         window.requestAnimationFrame(frame);
     }
 
