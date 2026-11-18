@@ -1,89 +1,93 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Tic Tac Toe - PvP & PvC</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0f172a">
+  <title>Tic Tac Toe · Arcade Portal</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="../../styles/styles.css">
+  <link rel="stylesheet" href="../arcade-nav.css">
+  <link rel="stylesheet" href="styles/style.css">
+  <script defer src="js/main.js"></script>
 </head>
 <body>
-    <div class="container">
-        <a class="back-home-btn" href="../../index.html">← Back to Arcade</a>
-        <header class="game-header">
-            <h1 class="game-title">TIC TAC TOE</h1>
-            <p class="game-subtitle">Modern Edition</p>
-        </header>
-
-        <section class="mode-section">
-            <h2 class="section-title">Game Mode</h2>
-            <div class="mode-switcher">
-                <button class="mode-btn active" data-mode="pvp" id="modePvp">
-                    <span class="mode-icon">👥</span>
-                    <span class="mode-text">Player vs. Player</span>
-                </button>
-                <button class="mode-btn" data-mode="pvc" id="modePvc">
-                    <span class="mode-icon">🤖</span>
-                    <span class="mode-text">Player vs. Computer (PC)</span>
-                </button>
-            </div>
-        </section>
-
-        <section class="status-section">
-            <div class="status-banner" id="statusBanner">
-                <span id="statusText">Player X's Turn</span>
-            </div>
-        </section>
-
-        <section class="game-board-section">
-            <div class="game-board" id="gameBoard">
-                <button class="cell" data-cell-index="0" aria-label="Cell 0"></button>
-                <button class="cell" data-cell-index="1" aria-label="Cell 1"></button>
-                <button class="cell" data-cell-index="2" aria-label="Cell 2"></button>
-                <button class="cell" data-cell-index="3" aria-label="Cell 3"></button>
-                <button class="cell" data-cell-index="4" aria-label="Cell 4"></button>
-                <button class="cell" data-cell-index="5" aria-label="Cell 5"></button>
-                <button class="cell" data-cell-index="6" aria-label="Cell 6"></button>
-                <button class="cell" data-cell-index="7" aria-label="Cell 7"></button>
-                <button class="cell" data-cell-index="8" aria-label="Cell 8"></button>
-            </div>
-        </section>
-
-        <section class="scoreboard-section">
-            <h2 class="section-title">Scoreboard</h2>
-            <div class="scoreboard">
-                <div class="score-card score-x">
-                    <div class="score-label">Player X</div>
-                    <div class="score-value" id="scoreX">0</div>
-                    <div class="score-type">Wins</div>
-                </div>
-                <div class="score-card score-tie">
-                    <div class="score-label">Ties</div>
-                    <div class="score-value" id="scoreTie">0</div>
-                    <div class="score-type">Draws</div>
-                </div>
-                <div class="score-card score-o">
-                    <div class="score-label" id="scoreOLabel">Player O</div>
-                    <div class="score-value" id="scoreO">0</div>
-                    <div class="score-type">Wins</div>
-                </div>
-            </div>
-        </section>
-
-        <section class="controls-section">
-            <button class="control-btn reset-round" id="resetRoundBtn">
-                <span>🔄</span>
-                <span>Reset Round</span>
-            </button>
-            <button class="control-btn reset-scores" id="resetScoresBtn">
-                <span>🗑️</span>
-                <span>Reset Scores</span>
-            </button>
-        </section>
+  <a class="skip-link" href="#gameBoard">Skip to board</a>
+  <header class="site-header">
+    <div class="shell topbar">
+      <a class="brand" href="../../index.html" aria-label="Arcade Portal home">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <span>Arcade<span class="brand-accent">Portal</span></span>
+      </a>
+      <a class="back-home-btn" href="../../index.html#library">← Back to Arcade</a>
     </div>
+  </header>
 
-    <script src="js/main.js"></script>
+  <main class="shell">
+    <header class="marquee">
+      <div class="marquee-copy">
+        <h1>Tic <span>Tac</span> Toe</h1>
+        <p>Get three in a row, column, or diagonal to win.</p>
+      </div>
+    </header>
+
+    <div class="play-area">
+      <section class="panel settings" aria-labelledby="mode-title">
+        <h2 class="panel-title" id="mode-title"><i class="pad-icon" aria-hidden="true"></i>Game mode</h2>
+        <div class="mode-switcher" role="group" aria-labelledby="mode-title">
+          <button id="modePvp" type="button" class="mode-btn active" aria-pressed="true">
+            <span>Player vs. player</span><i aria-hidden="true"></i>
+          </button>
+          <button id="modePvc" type="button" class="mode-btn" aria-pressed="false">
+            <span>Player vs. computer</span><i aria-hidden="true"></i>
+          </button>
+        </div>
+      </section>
+
+      <section class="board-panel panel" aria-label="Play Tic Tac Toe">
+        <div class="round-bar">
+          <div class="status-banner" id="statusBanner" role="status" aria-atomic="true" data-player="x">
+            <span class="status-light" aria-hidden="true"></span>
+            <span id="statusText">Player X’s turn</span>
+          </div>
+          <button class="reset-round" type="button" id="resetRoundBtn">
+            <span aria-hidden="true">↻</span> Reset round
+          </button>
+        </div>
+        <div class="board-bezel">
+          <div class="game-board" id="gameBoard" role="group" aria-label="Game board" tabindex="-1">
+            <button class="cell" type="button" data-cell-index="0" aria-label="Row 1, column 1, empty"></button>
+            <button class="cell" type="button" data-cell-index="1" aria-label="Row 1, column 2, empty"></button>
+            <button class="cell" type="button" data-cell-index="2" aria-label="Row 1, column 3, empty"></button>
+            <button class="cell" type="button" data-cell-index="3" aria-label="Row 2, column 1, empty"></button>
+            <button class="cell" type="button" data-cell-index="4" aria-label="Row 2, column 2, empty"></button>
+            <button class="cell" type="button" data-cell-index="5" aria-label="Row 2, column 3, empty"></button>
+            <button class="cell" type="button" data-cell-index="6" aria-label="Row 3, column 1, empty"></button>
+            <button class="cell" type="button" data-cell-index="7" aria-label="Row 3, column 2, empty"></button>
+            <button class="cell" type="button" data-cell-index="8" aria-label="Row 3, column 3, empty"></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel scores" aria-labelledby="scores-title">
+        <h2 class="panel-title" id="scores-title"><i class="bars-icon" aria-hidden="true"></i>Scoreboard</h2>
+        <dl class="scoreboard">
+          <div class="score-row score-x">
+            <dt><span class="score-mark" aria-hidden="true">X</span>Player X<span class="sr-only"> wins</span></dt>
+            <dd id="scoreX">0</dd>
+          </div>
+          <div class="score-row score-o">
+            <dt><span class="score-mark" aria-hidden="true">O</span><span id="scoreOLabel">Player O</span><span class="sr-only"> wins</span></dt>
+            <dd id="scoreO">0</dd>
+          </div>
+          <div class="score-row score-tie">
+            <dt><span class="score-mark" aria-hidden="true">–</span>Ties</dt>
+            <dd id="scoreTie">0</dd>
+          </div>
+        </dl>
+        <button class="reset-scores" id="resetScoresBtn" type="button">Reset scores</button>
+      </section>
+    </div>
+  </main>
 </body>
 </html>
