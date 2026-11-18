@@ -2,3 +2,23 @@
 .DS_Store
 Thumbs.db
 /TODO.md
+
+# Test suites and standalone test files at any depth
+test/
+tests/
+__tests__/
+test[._-]*
+*[._-]test[._-]*
+*.spec.*
+
+# Local experiments and scratch scripts
+experiments/
+scratch/
+experiment*.js
+experiment*.[cm]js
+*[._-]experiment.js
+*[._-]experiment.[cm]js
+scratch*.js
+scratch*.[cm]js
+*[._-]scratch.js
+*[._-]scratch.[cm]js
